@@ -1,0 +1,1115 @@
+{
+ "projet": "Exécution optimale et agrégation de liquidité FX (EURUSD)",
+ "meta": {
+  "seed": 20261013,
+  "split": "TRAIN <= 2018 (calibration) ; VAL 2019-2022 (évaluation) ; TEST 2023+ scellé, jamais chargé",
+  "jours_train": 2342,
+  "jours_val_utilises": 1037,
+  "jours_val_total": 1043,
+  "echantillons_par_strategie": 2074,
+  "bootstrap": "1 000 rééchantillons par blocs de 5 jours, IC95 percentile, mêmes blocs pour toutes les stratégies",
+  "duree_s": 16.2
+ },
+ "hypotheses": {
+  "ordre_parent": "50 M EUR (achat ET vente rejoués chaque jour), 60 min, 1 tranche/min, fenêtre 8h00 New York",
+  "volume_fx": "AUCUN volume FX dans les données (colonne volume = 0) : l'activité de prix |rendement| moyen par minute (TRAIN) sert de proxy de volume",
+  "volume_jour_accessible_eur": 5000000000.0,
+  "volume_fenetre_attendu_eur": 336467873.946504,
+  "participation_twap_nominale": 0.1486025973699636,
+  "impact_temporaire_lineaire": "slippage_bps = 10.0 * participation",
+  "impact_racine_carree": "slippage_bps = y * sigma_minute_bps * sqrt(participation), y=1.557, calibré pour égaler le linéaire au TWAP nominal",
+  "impact_permanent_bps_ordre_complet": 0.5,
+  "demi_spread_bps": 0.1,
+  "activite_du_jour": "volume réel = volume attendu x m, m = activité réalisée / attendue, borné [0.3, 3.0] ; jamais visible des stratégies",
+  "sigma_ac_bps_par_racine_min": 2.677335530922273,
+  "theta_ac_bps_par_fraction": 94.0871335611765,
+  "lambdas_ac": [
+   0.01,
+   0.05,
+   0.3
+  ],
+  "kappa_T_des_lambdas": [
+   1.658260910401486,
+   3.707512266298386,
+   9.074307450022213
+  ],
+  "tca_nature": "TCA fondée sur un MODÈLE d'impact supposé appliqué à de vraies trajectoires de prix : l'espérance du coût d'impact vient du modèle, le risque de prix (écart-type, queues) vient des données réelles"
+ },
+ "regime_val_vs_train": {
+  "sigma_rms_val_bps": 2.1838537910322513,
+  "sigma_rms_train_bps": 2.677335530922273,
+  "m_moyen_val": 0.8382273085715443,
+  "m_median_val": 0.7240985978337754,
+  "part_jours_m_au_plancher": 0.006750241080038573
+ },
+ "tca_impact_lineaire": {
+  "strategies": {
+   "TWAP": {
+    "shortfall_moyen_bps": 2.5896611274470014,
+    "ic95_moyen_bps": [
+     2.487052774602714,
+     2.69279552504657
+    ],
+    "ecart_type_bps": 8.262229178784452,
+    "ic95_ecart_type_bps": [
+     7.310214385357901,
+     9.431733791763174
+    ],
+    "p95_bps": 13.763730626213095,
+    "ic95_p95_bps": [
+     12.793366222244986,
+     14.83898323972583
+    ],
+    "p05_bps": -9.575538168474047,
+    "cout_impact_moyen_bps": 2.5896611274470014,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "theorie": {
+     "E_theorique_bps": 1.913952226019609,
+     "std_theorique_bps": 10.403917004126999
+    },
+    "utilite": {
+     "lam=0.01": 3.2723054374745733,
+     "lam=0.05": 6.002882677584861,
+     "lam=0.3": 23.06899042827416
+    }
+   },
+   "VWAP-proxy": {
+    "shortfall_moyen_bps": 2.4718545551478637,
+    "ic95_moyen_bps": [
+     2.374617873569502,
+     2.569589742402882
+    ],
+    "ecart_type_bps": 8.860723066058158,
+    "ic95_ecart_type_bps": [
+     7.795017906371512,
+     10.166566364133256
+    ],
+    "p95_bps": 14.444990545257054,
+    "ic95_p95_bps": [
+     13.100608856089531,
+     15.360216223276415
+    ],
+    "p05_bps": -10.34567800260053,
+    "cout_impact_moyen_bps": 2.4718545551478632,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": -0.11780657229913771,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.12320578264368805,
+     -0.11243490103321208
+    ],
+    "theorie": {
+     "E_theorique_bps": 1.8315198312539063,
+     "std_theorique_bps": 11.112477910856319
+    },
+    "utilite": {
+     "lam=0.01": 3.256978687681615,
+     "lam=0.05": 6.397475217816619,
+     "lam=0.3": 26.025578531160395
+    }
+   },
+   "AC-lam1": {
+    "shortfall_moyen_bps": 3.0174531826696933,
+    "ic95_moyen_bps": [
+     2.895261998587372,
+     3.140270807287764
+    ],
+    "ecart_type_bps": 6.76460871105709,
+    "ic95_ecart_type_bps": [
+     6.105761102339366,
+     7.567527473269553
+    ],
+    "p95_bps": 12.515155329740141,
+    "ic95_p95_bps": [
+     11.728334405502961,
+     13.031286035875093
+    ],
+    "p05_bps": -7.642726892036909,
+    "cout_impact_moyen_bps": 3.0174531826696933,
+    "part_executee_mi_horizon": 0.633398037010761,
+    "diff_moyen_vs_twap_bps": 0.4277920552226919,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.4082092239846581,
+     0.44747528224119365
+    ],
+    "theorie": {
+     "E_theorique_bps": 2.2127850589578237,
+     "std_theorique_bps": 8.509193435835652
+    },
+    "utilite": {
+     "lam=0.01": 3.475052492806788,
+     "lam=0.05": 5.305449733355166,
+     "lam=0.3": 16.74543248678253
+    }
+   },
+   "AC-lam2": {
+    "shortfall_moyen_bps": 5.160973176043035,
+    "ic95_moyen_bps": [
+     4.940614746413398,
+     5.382461322630165
+    ],
+    "ecart_type_bps": 4.806332028640477,
+    "ic95_ecart_type_bps": [
+     4.518787323453029,
+     5.148504796420863
+    ],
+    "p95_bps": 11.83775647969429,
+    "ic95_p95_bps": [
+     11.58666161462911,
+     12.153833751609973
+    ],
+    "p05_bps": -3.3258248777347306,
+    "cout_impact_moyen_bps": 5.160973176043035,
+    "part_executee_mi_horizon": 0.8471041629842977,
+    "diff_moyen_vs_twap_bps": 2.5713120485960332,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.453561971810684,
+     2.6896657975835954
+    ],
+    "theorie": {
+     "E_theorique_bps": 3.7098422663473327,
+     "std_theorique_bps": 5.696523143737324
+    },
+    "utilite": {
+     "lam=0.01": 5.3919814517383875,
+     "lam=0.05": 6.316014554519799,
+     "lam=0.3": 12.091221446903617
+    }
+   },
+   "AC-lam3": {
+    "shortfall_moyen_bps": 11.815905862192928,
+    "ic95_moyen_bps": [
+     11.290716798841236,
+     12.343787425176943
+    ],
+    "ecart_type_bps": 5.2965113670793915,
+    "ic95_ecart_type_bps": [
+     5.0342689549840145,
+     5.556312113223278
+    ],
+    "p95_bps": 20.536078472155523,
+    "ic95_p95_bps": [
+     19.607337864347205,
+     21.570900217734348
+    ],
+    "p05_bps": 3.2783985398829016,
+    "cout_impact_moyen_bps": 11.815905862192928,
+    "part_executee_mi_horizon": 0.9892973969393978,
+    "diff_moyen_vs_twap_bps": 9.226244734745926,
+    "ic95_diff_moyen_vs_twap_bps": [
+     8.803664024238524,
+     9.650991900130373
+    ],
+    "theorie": {
+     "E_theorique_bps": 8.357367495656725,
+     "std_theorique_bps": 3.5028017962402247
+    },
+    "utilite": {
+     "lam=0.01": 12.096436188808939,
+     "lam=0.05": 13.218557495272988,
+     "lam=0.3": 20.231815660673288
+    }
+   },
+   "IS-front-loaded": {
+    "shortfall_moyen_bps": 3.850456634341796,
+    "ic95_moyen_bps": [
+     3.690118475217922,
+     4.0116168030325365
+    ],
+    "ecart_type_bps": 6.434249987274545,
+    "ic95_ecart_type_bps": [
+     5.796460344224599,
+     7.227832464859068
+    ],
+    "p95_bps": 12.324688610788884,
+    "ic95_p95_bps": [
+     11.777519937604351,
+     12.86618277967941
+    ],
+    "p05_bps": -6.534166390282156,
+    "cout_impact_moyen_bps": 3.8504566343417963,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 1.2607955068947945,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.203065700615208,
+     1.318821277985966
+    ],
+    "theorie": {
+     "E_theorique_bps": 2.794578449425438,
+     "std_theorique_bps": 8.010044480477374
+    },
+    "utilite": {
+     "lam=0.01": 4.26445236332922,
+     "lam=0.05": 5.92043527927892,
+     "lam=0.3": 16.27032850396454
+    }
+   },
+   "POV-proxy": {
+    "shortfall_moyen_bps": 2.650563330578372,
+    "ic95_moyen_bps": [
+     2.5659366693929204,
+     2.7408214595235236
+    ],
+    "ecart_type_bps": 7.5787534793402225,
+    "ic95_ecart_type_bps": [
+     6.8644509118421615,
+     8.444256270092083
+    ],
+    "p95_bps": 13.489113253734766,
+    "ic95_p95_bps": [
+     12.628130856828571,
+     14.198260148664183
+    ],
+    "p05_bps": -9.128399518542679,
+    "cout_impact_moyen_bps": 2.650563330578372,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.0609022031313704,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.04334065908544947,
+     0.08191143164727335
+    ],
+    "theorie": null,
+    "utilite": {
+     "lam=0.01": 3.224938373584487,
+     "lam=0.05": 5.522438545608948,
+     "lam=0.3": 19.88181462076183
+    }
+   }
+  },
+  "meilleure_par_lambda": {
+   "lam=0.01": "POV-proxy",
+   "lam=0.05": "AC-lam1",
+   "lam=0.3": "AC-lam2"
+  }
+ },
+ "tca_impact_racine_carree": {
+  "strategies": {
+   "TWAP": {
+    "shortfall_moyen_bps": 2.056328383321333,
+    "ic95_moyen_bps": [
+     2.0155301449283787,
+     2.096952594667991
+    ],
+    "ecart_type_bps": 8.221128512847775,
+    "ic95_ecart_type_bps": [
+     7.263340060150915,
+     9.392665099976222
+    ],
+    "p95_bps": 13.56628148284817,
+    "ic95_p95_bps": [
+     12.486123379077684,
+     14.731230828946389
+    ],
+    "p05_bps": -9.808896462749223,
+    "cout_impact_moyen_bps": 2.0563283833213326,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "theorie": {
+     "E_theorique_bps": 1.913952226019609,
+     "std_theorique_bps": 10.403917004126999
+    },
+    "utilite": {
+     "lam=0.01": 2.7321979235689198,
+     "lam=0.05": 5.435676084559267,
+     "lam=0.3": 22.332414590748932
+    }
+   },
+   "VWAP-proxy": {
+    "shortfall_moyen_bps": 2.287669372436617,
+    "ic95_moyen_bps": [
+     2.2413451579013666,
+     2.333795988581714
+    ],
+    "ecart_type_bps": 8.829030663588636,
+    "ic95_ecart_type_bps": [
+     7.76308379255649,
+     10.137489618184635
+    ],
+    "p95_bps": 14.425857821424557,
+    "ic95_p95_bps": [
+     13.259962170027285,
+     15.624556710375126
+    ],
+    "p05_bps": -10.306874719013432,
+    "cout_impact_moyen_bps": 2.287669372436617,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": 0.23134098911528378,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.2258150129729879,
+     0.23684339391372303
+    ],
+    "theorie": {
+     "E_theorique_bps": 1.8315198312539063,
+     "std_theorique_bps": 11.112477910856319
+    },
+    "utilite": {
+     "lam=0.01": 3.0671871970225006,
+     "lam=0.05": 6.185258495366036,
+     "lam=0.3": 25.67320411001313
+    }
+   },
+   "AC-lam1": {
+    "shortfall_moyen_bps": 2.053968709391266,
+    "ic95_moyen_bps": [
+     2.013216185242519,
+     2.094547401490247
+    ],
+    "ecart_type_bps": 6.689383664032769,
+    "ic95_ecart_type_bps": [
+     6.020292454795952,
+     7.493062618051592
+    ],
+    "p95_bps": 11.780408521553856,
+    "ic95_p95_bps": [
+     11.12310374190375,
+     12.478754125869598
+    ],
+    "p05_bps": -8.07134470719313,
+    "cout_impact_moyen_bps": 2.0539687093912664,
+    "part_executee_mi_horizon": 0.633398037010761,
+    "diff_moyen_vs_twap_bps": -0.0023596739300670855,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.002405193177743903,
+     -0.002313959685859657
+    ],
+    "theorie": {
+     "E_theorique_bps": 2.2127850589578237,
+     "std_theorique_bps": 8.509193435835652
+    },
+    "utilite": {
+     "lam=0.01": 2.5014472474375506,
+     "lam=0.05": 4.291361399622689,
+     "lam=0.3": 15.478324850779806
+    }
+   },
+   "AC-lam2": {
+    "shortfall_moyen_bps": 2.360632972352577,
+    "ic95_moyen_bps": [
+     2.312489888917518,
+     2.408570698915874
+    ],
+    "ecart_type_bps": 4.425282800245813,
+    "ic95_ecart_type_bps": [
+     4.120168343387609,
+     4.788383705710017
+    ],
+    "p95_bps": 9.111722895033738,
+    "ic95_p95_bps": [
+     8.74642867862769,
+     9.818070964348856
+    ],
+    "p05_bps": -5.1273081685660165,
+    "cout_impact_moyen_bps": 2.360632972352577,
+    "part_executee_mi_horizon": 0.8471041629842977,
+    "diff_moyen_vs_twap_bps": 0.3043045890312439,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.2969597439891394,
+     0.3116181042478831
+    ],
+    "theorie": {
+     "E_theorique_bps": 3.7098422663473327,
+     "std_theorique_bps": 5.696523143737324
+    },
+    "utilite": {
+     "lam=0.01": 2.5564642509740914,
+     "lam=0.05": 3.339789365460148,
+     "lam=0.3": 8.235571330998004
+    }
+   },
+   "AC-lam3": {
+    "shortfall_moyen_bps": 3.4237871239847193,
+    "ic95_moyen_bps": [
+     3.3500219784532046,
+     3.497237620381809
+    ],
+    "ecart_type_bps": 2.739478927608321,
+    "ic95_ecart_type_bps": [
+     2.5666808539009263,
+     2.908624995990785
+    ],
+    "p95_bps": 7.482425904125923,
+    "ic95_p95_bps": [
+     7.175341414003861,
+     7.8236261703931955
+    ],
+    "p05_bps": -1.3192615150529785,
+    "cout_impact_moyen_bps": 3.423787123984719,
+    "part_executee_mi_horizon": 0.9892973969393978,
+    "diff_moyen_vs_twap_bps": 1.3674587406633862,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.334491833524826,
+     1.400285025713818
+    ],
+    "theorie": {
+     "E_theorique_bps": 8.357367495656725,
+     "std_theorique_bps": 3.5028017962402247
+    },
+    "utilite": {
+     "lam=0.01": 3.4988345719328198,
+     "lam=0.05": 3.7990243637252212,
+     "lam=0.3": 5.67521056242773
+    }
+   },
+   "IS-front-loaded": {
+    "shortfall_moyen_bps": 2.158988612857239,
+    "ic95_moyen_bps": [
+     2.115702794251282,
+     2.202089793511774
+    ],
+    "ecart_type_bps": 6.291629685487276,
+    "ic95_ecart_type_bps": [
+     5.633740342157008,
+     7.095548904506423
+    ],
+    "p95_bps": 11.155488157985946,
+    "ic95_p95_bps": [
+     10.513228794046428,
+     11.7100044059573
+    ],
+    "p05_bps": -7.331860308565863,
+    "cout_impact_moyen_bps": 2.158988612857239,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 0.10266022953590603,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.10017264932290286,
+     0.105137198843783
+    ],
+    "theorie": {
+     "E_theorique_bps": 2.794578449425438,
+     "std_theorique_bps": 8.010044480477374
+    },
+    "utilite": {
+     "lam=0.01": 2.5548346538502864,
+     "lam=0.05": 4.138218817822476,
+     "lam=0.3": 14.034369842648657
+    }
+   },
+   "POV-proxy": {
+    "shortfall_moyen_bps": 2.221093190552803,
+    "ic95_moyen_bps": [
+     2.1974901865832797,
+     2.2472042021733625
+    ],
+    "ecart_type_bps": 7.540567986190428,
+    "ic95_ecart_type_bps": [
+     6.820160431387901,
+     8.406335197187415
+    ],
+    "p95_bps": 13.319420752643596,
+    "ic95_p95_bps": [
+     12.362708972808065,
+     14.291215130910556
+    ],
+    "p05_bps": -9.194800363247158,
+    "cout_impact_moyen_bps": 2.221093190552803,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.16476480723147002,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.1476556586887732,
+     0.1840389966948166
+    ],
+    "theorie": null,
+    "utilite": {
+     "lam=0.01": 2.7896948460964026,
+     "lam=0.05": 5.0641014682708025,
+     "lam=0.3": 19.279142856860794
+    }
+   }
+  },
+  "meilleure_par_lambda": {
+   "lam=0.01": "AC-lam1",
+   "lam=0.05": "AC-lam2",
+   "lam=0.3": "AC-lam3"
+  }
+ },
+ "sensibilite_impact_lineaire": {
+  "x0.5": {
+   "TWAP": {
+    "shortfall_moyen_bps": 1.3448305637235007,
+    "ecart_type_bps": 8.225858062102244
+   },
+   "VWAP-proxy": {
+    "shortfall_moyen_bps": 1.285927277573932,
+    "ecart_type_bps": 8.830281341825598
+   },
+   "AC-lam1": {
+    "shortfall_moyen_bps": 1.8440030431966228,
+    "ecart_type_bps": 5.791746854020578
+   },
+   "AC-lam2": {
+    "shortfall_moyen_bps": 3.6042592275950223,
+    "ecart_type_bps": 3.821671985232448
+   },
+   "AC-lam3": {
+    "shortfall_moyen_bps": 8.13510748833593,
+    "ecart_type_bps": 3.865304747943084
+   },
+   "IS-front-loaded": {
+    "shortfall_moyen_bps": 1.9752283171708978,
+    "ecart_type_bps": 6.319434733724324
+   },
+   "POV-proxy": {
+    "shortfall_moyen_bps": 1.3752816652891862,
+    "ecart_type_bps": 7.5473448681413355
+   }
+  },
+  "x2": {
+   "TWAP": {
+    "shortfall_moyen_bps": 5.079322254894003,
+    "ecart_type_bps": 8.406140111988144
+   },
+   "VWAP-proxy": {
+    "shortfall_moyen_bps": 4.843709110295728,
+    "ecart_type_bps": 8.98145823147346
+   },
+   "AC-lam1": {
+    "shortfall_moyen_bps": 5.430724076548776,
+    "ecart_type_bps": 7.590248635273758
+   },
+   "AC-lam2": {
+    "shortfall_moyen_bps": 7.647858929687941,
+    "ecart_type_bps": 6.108831465596612
+   },
+   "AC-lam3": {
+    "shortfall_moyen_bps": 17.073307865616506,
+    "ecart_type_bps": 7.310483063881941
+   },
+   "IS-front-loaded": {
+    "shortfall_moyen_bps": 7.600913268683593,
+    "ecart_type_bps": 6.874361285130917
+   },
+   "POV-proxy": {
+    "shortfall_moyen_bps": 5.201126661156744,
+    "ecart_type_bps": 7.70310737744323
+   }
+  }
+ },
+ "frontiere_theorique": {
+  "lam": [
+   0.0,
+   0.001597312280060254,
+   0.002982471286216891,
+   0.005568813990945267,
+   0.0103979841848149,
+   0.019414919457438805,
+   0.036251170499885334,
+   0.06768750009458535,
+   0.12638482029342984,
+   0.23598334667821938,
+   0.44062364277735727,
+   0.8227241341700465,
+   1.536174946671828,
+   2.868316813342012,
+   5.3556669177068965,
+   10.0
+  ],
+  "E_bps": [
+   1.9139522260196087,
+   1.9201296317326482,
+   1.9340754019215254,
+   1.97617641152565,
+   2.090926926983129,
+   2.3601165890035714,
+   2.883767496158449,
+   3.7332298808202498,
+   4.955415145842195,
+   6.635299300504194,
+   8.921848610069219,
+   12.020838206533552,
+   16.191699772709974,
+   21.734219935673345,
+   28.933886561873503,
+   37.92589225913098
+  ],
+  "std_bps": [
+   11.823635633342866,
+   11.484878834116264,
+   11.21521193016795,
+   10.763117699420357,
+   10.062272152611428,
+   9.09668102072519,
+   7.95480884210043,
+   6.798487117116515,
+   5.746158555922372,
+   4.826005457371882,
+   4.024578857668339,
+   3.3237482486804626,
+   2.708031601467101,
+   2.1651828979657184,
+   1.686657596334485,
+   1.2683528768863104
+  ],
+  "kappa_T": [
+   0.0,
+   0.6627647361574515,
+   0.9056297870822189,
+   1.2374861412058433,
+   1.690934906868924,
+   2.3105089140460326,
+   3.157021975506068,
+   4.313476161969991,
+   5.893042797393592,
+   8.049737161943229,
+   10.992421629418741,
+   15.00247956271492,
+   20.454366863725504,
+   27.835092460166088,
+   37.75141685754792,
+   50.90036194212711
+  ]
+ },
+ "agregation": {
+  "ordre": "20 M EUR, 20 000 ordres VAL par niveau de toxicité, stats du routeur apprises sur 10 000 ordres TRAIN, mêmes aléas rejoués pour les 3 routeurs (nombres aléatoires communs)",
+  "unite": "pips (0.0001 EURUSD) ; coût = sens*(prix payé - mid d'arrivée), positif = on paie plus cher",
+  "lp": {
+   "noms": [
+    "LL1",
+    "LL2",
+    "LL3",
+    "LM1",
+    "LM2",
+    "FERME1",
+    "FERME2",
+    "FERME3"
+   ],
+   "demi_spread_pips": [
+    0.03,
+    0.04,
+    0.05,
+    0.08,
+    0.09,
+    0.1,
+    0.12,
+    0.15
+   ],
+   "bruit_pips": [
+    0.03,
+    0.03,
+    0.04,
+    0.04,
+    0.04,
+    0.05,
+    0.05,
+    0.05
+   ],
+   "latence_cote_ms": [
+    150.0,
+    100.0,
+    80.0,
+    40.0,
+    30.0,
+    10.0,
+    10.0,
+    5.0
+   ],
+   "fenetre_last_look_ms": [
+    150.0,
+    200.0,
+    120.0,
+    60.0,
+    50.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "seuil_rejet_pips": [
+    0.03,
+    0.04,
+    0.05,
+    0.08,
+    0.1,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "p_rejet_base": [
+    0.15,
+    0.15,
+    0.1,
+    0.05,
+    0.05,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "p_rejet_pente_toxicite": [
+    0.8,
+    0.75,
+    0.7,
+    0.4,
+    0.4,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "profondeur_meur": [
+    6.0,
+    6.0,
+    8.0,
+    8.0,
+    10.0,
+    8.0,
+    10.0,
+    10.0
+   ]
+  },
+  "resultats": {
+   "toxicite=0.1": {
+    "stats_apprises": {
+     "p_rejet": {
+      "LL1": 0.0985,
+      "LL2": 0.0848,
+      "LL3": 0.0547,
+      "LM1": 0.0157,
+      "LM2": 0.0078,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     },
+     "surcout_reroutage_pips": {
+      "LL1": 0.09645657625212273,
+      "LL2": 0.12037117387435065,
+      "LL3": 0.09618047711140444,
+      "LM1": 0.06196985969286534,
+      "LM2": 0.05667223619561105,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     }
+    },
+    "a_meilleur_affiche": {
+     "prix_effectif_pips": {
+      "moyenne": 0.022959550425738006,
+      "ic95": [
+       0.022196907028172386,
+       0.023722193823303626
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.016362182066758556,
+     "ecart_effectif_moins_plan_pips": 0.006597368358979452,
+     "taux_remplissage": 0.99995,
+     "rejets_par_ordre": 0.18435,
+     "ordres_avec_rejet": 0.15445,
+     "delai_dernier_fill_ms": 198.093,
+     "ecart_type_cout_pips": 0.055027583474061115,
+     "p95_cout_pips": 0.0983818135003616,
+     "diff_vs_b_pips": {
+      "moyenne": 1.364187588920806e-05,
+      "ic95": [
+       -2.759276243686309e-05,
+       5.487651421527921e-05
+      ]
+     }
+    },
+    "b_prix_effectif": {
+     "prix_effectif_pips": {
+      "moyenne": 0.0229459085498488,
+      "ic95": [
+       0.02218304235376841,
+       0.02370877474592919
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.016426463260400866,
+     "ecart_effectif_moins_plan_pips": 0.006519445289447934,
+     "taux_remplissage": 0.9999549999999999,
+     "rejets_par_ordre": 0.18245,
+     "ordres_avec_rejet": 0.153,
+     "delai_dernier_fill_ms": 195.373,
+     "ecart_type_cout_pips": 0.05504365922310495,
+     "p95_cout_pips": 0.09837565244081897,
+     "diff_vs_b_pips": {
+      "moyenne": 0.0,
+      "ic95": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "c_split": {
+     "prix_effectif_pips": {
+      "moyenne": 0.02500193462226233,
+      "ic95": [
+       0.024227527125620665,
+       0.02577634211890399
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.018464147299728326,
+     "ecart_effectif_moins_plan_pips": 0.006537787322534004,
+     "taux_remplissage": 0.99995,
+     "rejets_par_ordre": 0.1828,
+     "ordres_avec_rejet": 0.15325,
+     "delai_dernier_fill_ms": 196.543,
+     "ecart_type_cout_pips": 0.0558764073752059,
+     "p95_cout_pips": 0.10202085223827462,
+     "diff_vs_b_pips": {
+      "moyenne": 0.00205602607241353,
+      "ic95": [
+       0.001996599592419215,
+       0.0021154525524078446
+      ]
+     }
+    },
+    "desaccord_a_vs_b": {
+     "part_ordres": 0.0285,
+     "cout_a_moins_cout_b_pips": {
+      "moyenne": -0.00030554691951749743,
+      "ic95": [
+       -0.0011864070470860566,
+       0.0005753132080510617
+      ]
+     }
+    }
+   },
+   "toxicite=0.5": {
+    "stats_apprises": {
+     "p_rejet": {
+      "LL1": 0.2294,
+      "LL2": 0.1995,
+      "LL3": 0.1472,
+      "LM1": 0.0416,
+      "LM2": 0.026,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     },
+     "surcout_reroutage_pips": {
+      "LL1": 0.11201685134578372,
+      "LL2": 0.1416388078451154,
+      "LL3": 0.12386912353656465,
+      "LM1": 0.11352170951616915,
+      "LM2": 0.10146335888094375,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     }
+    },
+    "a_meilleur_affiche": {
+     "prix_effectif_pips": {
+      "moyenne": 0.035080150224457964,
+      "ic95": [
+       0.03429593255812314,
+       0.03586436789079279
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.016362182066758556,
+     "ecart_effectif_moins_plan_pips": 0.018717968157699407,
+     "taux_remplissage": 0.99924,
+     "rejets_par_ordre": 0.476,
+     "ordres_avec_rejet": 0.3132,
+     "delai_dernier_fill_ms": 215.411,
+     "ecart_type_cout_pips": 0.056584247937923056,
+     "p95_cout_pips": 0.11511290185195126,
+     "diff_vs_b_pips": {
+      "moyenne": 0.00028304644444593385,
+      "ic95": [
+       0.00013755157957777442,
+       0.0004285413093140933
+      ]
+     }
+    },
+    "b_prix_effectif": {
+     "prix_effectif_pips": {
+      "moyenne": 0.03479710378001203,
+      "ic95": [
+       0.03402056429825819,
+       0.03557364326176587
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.017044645698330592,
+     "ecart_effectif_moins_plan_pips": 0.01775245808168144,
+     "taux_remplissage": 0.999295,
+     "rejets_par_ordre": 0.45405,
+     "ordres_avec_rejet": 0.30155,
+     "delai_dernier_fill_ms": 204.704,
+     "ecart_type_cout_pips": 0.056030238102778254,
+     "p95_cout_pips": 0.11426014064838198,
+     "diff_vs_b_pips": {
+      "moyenne": 0.0,
+      "ic95": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "c_split": {
+     "prix_effectif_pips": {
+      "moyenne": 0.03697538533424699,
+      "ic95": [
+       0.03619075122956127,
+       0.03776001943893271
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.01907129511854567,
+     "ecart_effectif_moins_plan_pips": 0.017904090215701322,
+     "taux_remplissage": 0.9992050000000001,
+     "rejets_par_ordre": 0.45805,
+     "ordres_avec_rejet": 0.30285,
+     "delai_dernier_fill_ms": 206.7105,
+     "ecart_type_cout_pips": 0.05661429552790865,
+     "p95_cout_pips": 0.11717791143820641,
+     "diff_vs_b_pips": {
+      "moyenne": 0.0021782815542349576,
+      "ic95": [
+       0.002098224964771289,
+       0.0022583381436986263
+      ]
+     }
+    },
+    "desaccord_a_vs_b": {
+     "part_ordres": 0.1017,
+     "cout_a_moins_cout_b_pips": {
+      "moyenne": 0.0010782023453022578,
+      "ic95": [
+       4.1150302442341134e-05,
+       0.0021152543881621747
+      ]
+     }
+    }
+   },
+   "toxicite=0.9": {
+    "stats_apprises": {
+     "p_rejet": {
+      "LL1": 0.3614,
+      "LL2": 0.3149,
+      "LL3": 0.2394,
+      "LM1": 0.0725,
+      "LM2": 0.0444,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     },
+     "surcout_reroutage_pips": {
+      "LL1": 0.12091545667629387,
+      "LL2": 0.16406432552167588,
+      "LL3": 0.14617251747027823,
+      "LM1": 0.14252367057177026,
+      "LM2": 0.1385080134997784,
+      "FERME1": 0.0,
+      "FERME2": 0.0,
+      "FERME3": 0.0
+     }
+    },
+    "a_meilleur_affiche": {
+     "prix_effectif_pips": {
+      "moyenne": 0.04944383503718645,
+      "ic95": [
+       0.048534965833661424,
+       0.05035270424071147
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.016362182066758556,
+     "ecart_effectif_moins_plan_pips": 0.0330816529704279,
+     "taux_remplissage": 0.99775,
+     "rejets_par_ordre": 0.78545,
+     "ordres_avec_rejet": 0.40715,
+     "delai_dernier_fill_ms": 229.8135,
+     "ecart_type_cout_pips": 0.06557832418613875,
+     "p95_cout_pips": 0.1494584901772067,
+     "diff_vs_b_pips": {
+      "moyenne": 0.000630019250925743,
+      "ic95": [
+       0.00038853097542620454,
+       0.0008715075264252814
+      ]
+     }
+    },
+    "b_prix_effectif": {
+     "prix_effectif_pips": {
+      "moyenne": 0.048813815786260706,
+      "ic95": [
+       0.047933610903268455,
+       0.04969402066925296
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.019196783229179344,
+     "ecart_effectif_moins_plan_pips": 0.029617032557081365,
+     "taux_remplissage": 0.99798,
+     "rejets_par_ordre": 0.7051,
+     "ordres_avec_rejet": 0.3775,
+     "delai_dernier_fill_ms": 201.7035,
+     "ecart_type_cout_pips": 0.06351008587727891,
+     "p95_cout_pips": 0.139056365884435,
+     "diff_vs_b_pips": {
+      "moyenne": 0.0,
+      "ic95": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "c_split": {
+     "prix_effectif_pips": {
+      "moyenne": 0.051215950362492706,
+      "ic95": [
+       0.05033295962314874,
+       0.052098941101836674
+      ]
+     },
+     "meilleur_affiche_pips": -0.013860430533973272,
+     "plan_affiche_pips": 0.021055475607445504,
+     "ecart_effectif_moins_plan_pips": 0.030160474755047198,
+     "taux_remplissage": 0.9976166666666666,
+     "rejets_par_ordre": 0.71715,
+     "ordres_avec_rejet": 0.37995,
+     "delai_dernier_fill_ms": 206.3085,
+     "ecart_type_cout_pips": 0.06371109586888203,
+     "p95_cout_pips": 0.14241982600571904,
+     "diff_vs_b_pips": {
+      "moyenne": 0.0024021345762319972,
+      "ic95": [
+       0.002288194406328994,
+       0.0025160747461350007
+      ]
+     }
+    },
+    "desaccord_a_vs_b": {
+     "part_ordres": 0.19865,
+     "cout_a_moins_cout_b_pips": {
+      "moyenne": 0.0012879946573361972,
+      "ic95": [
+       0.00045841104443781035,
+       0.002117578270234584
+      ]
+     }
+    }
+   }
+  }
+ },
+ "lecture": [
+  "Impact linéaire : coût moyen le plus bas = VWAP-proxy (2.47 bps), risque le plus bas = AC-lam2 (écart-type 4.81 bps, mais coût 5.16 bps) : on paie la réduction de risque en impact.",
+  "VWAP-proxy vs TWAP : écart de coût moyen -0.118 bps, IC95 [-0.123, -0.112] (bootstrap par blocs de 5 jours, apparié) : statistiquement non nul, mais économiquement faible (1.4 % de l'écart-type du shortfall du TWAP).",
+  "Frontière : de AC-lam1 à AC-lam3 le coût moyen passe de 3.02 à 11.82 bps et l'écart-type de 6.76 à 5.30 bps : l'arbitrage coût/risque d'Almgren-Chriss se retrouve sur données réelles.",
+  "Hors échantillon (TRAIN -> VAL) : σ rms de la fenêtre 2.18 bps/min en VAL contre 2.68 en TRAIN, activité du jour m moyen 0.84 (médiane 0.72) : la théorie calibrée sur TRAIN surestime le risque (TWAP : écart-type théorique 10.4 vs 8.3 empirique) et sous-estime l'impact (TWAP : 1.91 vs 2.59 bps).",
+  "Pourquoi la théorie ne tombe pas pile : pour AC-lam3 l'écart-type du shortfall (5.30 bps) mêle le risque de prix (2.66 bps contre 3.50 en théorie) et la variabilité jour à jour de l'impact (4.58 bps, absente de la théorie car le volume réel du jour varie).",
+  "Meilleure stratégie par aversion au risque (utilité empirique E + λ·Var), théorie AC -> empirique : lam=0.01 : AC-lam1 -> POV-proxy, lam=0.05 : AC-lam2 -> AC-lam1, lam=0.3 : AC-lam3 -> AC-lam2. Hors échantillon, le gagnant est moins agressif que l'optimum du modèle calibré sur TRAIN.",
+  "Impact racine carrée : classement des stratégies par risque différent au linéaire ; coût d'une exécution agressive AC-lam3 = 3.42 bps contre 11.82 en linéaire : le modèle d'impact choisi déplace l'urgence optimale (meilleure par λ en racine carrée : lam=0.01 -> AC-lam1, lam=0.05 -> AC-lam2, lam=0.3 -> AC-lam3).",
+  "SOR toxicite=0.1 : meilleur prix affiché = -0.014 pip mais prix obtenu par (a) = +0.023 pip (écart +0.037) ; 15 % des ordres subissent un rejet. (b) obtient +0.023, (c) +0.025. (a) et (b) ne choisissent pas le même LP dans 3 % des ordres ; sur ceux-là (a) coûte -0.0003 pip de plus que (b) (IC95 [-0.0012, +0.0006]).",
+  "SOR toxicite=0.5 : meilleur prix affiché = -0.014 pip mais prix obtenu par (a) = +0.035 pip (écart +0.049) ; 31 % des ordres subissent un rejet. (b) obtient +0.035, (c) +0.037. (a) et (b) ne choisissent pas le même LP dans 10 % des ordres ; sur ceux-là (a) coûte +0.0011 pip de plus que (b) (IC95 [+0.0000, +0.0021]).",
+  "SOR toxicite=0.9 : meilleur prix affiché = -0.014 pip mais prix obtenu par (a) = +0.049 pip (écart +0.063) ; 41 % des ordres subissent un rejet. (b) obtient +0.049, (c) +0.051. (a) et (b) ne choisissent pas le même LP dans 20 % des ordres ; sur ceux-là (a) coûte +0.0013 pip de plus que (b) (IC95 [+0.0005, +0.0021])."
+ ],
+ "limites": [
+  "Aucun volume FX : le profil de volume est un proxy d'activité de prix (|rendement| par minute), pas un volume.",
+  "L'impact de marché est SUPPOSÉ (linéaire / racine carrée, paramètres documentés) et non estimé sur des fills : l'espérance du coût d'impact vient du modèle ; seules la dynamique de prix et l'activité du jour sont réelles.",
+  "Les prix sont des BID de barres 1 minute ; le demi-spread est une constante supposée, l'exécution se fait au prix de la barre précédente (pas de simulation de carnet, pas d'effet de latence sous la minute pour le TCA).",
+  "Les LP de l'agrégateur sont stylisés (8 LP, paramètres inventés pour représenter des LP serrés mais à last look face à des prix fermes plus larges) ; les ordres de grandeur en pips ne sont pas ceux d'un vrai agrégateur.",
+  "Les statistiques de rejet du routeur (b) sont non conditionnelles à l'âge de la cote ; un vrai SOR conditionnerait.",
+  "VAL (2019-2022) est moins actif que TRAIN (2010-2018) : les paramètres calibrés TRAIN sont donc légèrement hors régime.",
+  "TEST (2023+) scellé, jamais lu. Une seule exécution de référence, pas de réglage sur VAL."
+ ]
+}

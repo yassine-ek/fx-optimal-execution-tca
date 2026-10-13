@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+*.pyc
+.DS_Store
+# données de marché locales (HISTDATA_DIR, défaut ./data/histdata) : jamais versionnées
+data/histdata/

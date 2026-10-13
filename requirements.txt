@@ -1,0 +1,7 @@
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+matplotlib>=3.8
+numba>=0.59
+pytest>=8
+# Facultatif, seulement pour exécuter le carnet : jupyter, nbconvert, ipykernel

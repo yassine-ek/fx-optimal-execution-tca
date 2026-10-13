@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord des variantes</title>
+<meta name="description" content="Filtrer les variantes d'une stratégie sur des statistiques TRAIN, combiner celles qui restent et lire le résultat sur TRAIN puis VAL.">
+<style>
+:root {
+  --bg: #f7f8fa; --card: #ffffff; --fg: #1b1f27; --muted: #5d6675; --border: #d9dee6;
+  --accent: #1d4ed8; --accent-soft: #e3eafd; --grid: #e6e9ef; --zone: rgba(120,130,150,.16);
+  --gris: #9aa3b2; --bon: #15803d; --moyen: #c2640a; --mauvais: #b91c1c; --dd: #b91c1c; --ref: #c2640a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1218; --card: #171b23; --fg: #e6e9ef; --muted: #98a1b0; --border: #2b3140;
+    --accent: #6ea0ff; --accent-soft: #1d2a4a; --grid: #262c39; --zone: rgba(150,160,180,.14);
+    --gris: #6d7686; --bon: #4ade80; --moyen: #fbbf24; --mauvais: #f87171; --dd: #f87171; --ref: #fbbf24;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 1.05rem; margin: 0 0 10px; }
+p { margin: 0 0 8px; }
+.sub { color: var(--muted); margin-bottom: 14px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 0 0 16px; }
+.frais { border-left: 4px solid var(--accent); }
+.frais strong { color: var(--accent); }
+.note { font-size: .88rem; color: var(--muted); }
+.grille { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 820px) { .grille { grid-template-columns: 1fr; } }
+.filtre { margin: 0 0 12px; }
+.filtre label.titre { display: block; font-weight: 600; margin-bottom: 4px; }
+.ligne { display: flex; gap: 10px; align-items: center; }
+.ligne input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.ligne input[type=number] { width: 96px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font: inherit; }
+.cases { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.cases label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+button { font: inherit; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
+  color: var(--fg); cursor: pointer; }
+button:hover { border-color: var(--accent); }
+.compte { font-weight: 600; margin: 4px 0 10px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th:first-child, td:first-child, td.gauche, th.gauche { text-align: left; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .02em; }
+tr.ecartee td { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--gris); }
+tr.ecartee td.raison { text-decoration: none; font-size: .8rem; }
+tr.reference td { font-style: italic; }
+.puce { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
+.graphe { width: 100%; height: 380px; }
+.graphe.petit { height: 240px; }
+.legende-lecture { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+.overfit { display: flex; gap: 14px; align-items: flex-start; }
+.feu { flex: none; width: 18px; height: 18px; border-radius: 50%; margin-top: 4px; background: var(--gris); }
+.feu.vert { background: var(--bon); } .feu.orange { background: var(--moyen); } .feu.rouge { background: var(--mauvais); }
+.overfit h2 { margin-bottom: 4px; }
+.erreur { border-left: 4px solid var(--mauvais); }
+.erreur code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+.cache { display: none; }
+.bandeau { background: var(--accent-soft); border-radius: 8px; padding: 8px 12px; font-size: .88rem; margin: 0 0 16px; }
+@media (max-width: 480px) {
+  h1 { font-size: 1.3rem; } .graphe { height: 320px; } th, td { padding: 5px 4px; }
+  .masque-mobile { display: none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="titre">Tableau de bord</h1>
+    <p class="sub" id="sous-titre"></p>
+    <div class="card frais cache" id="frais-carte"><strong>Frais et hypothèses.</strong> <span id="frais"></span></div>
+    <div class="bandeau">La sélection n'utilise que TRAIN&nbsp;; VAL est hors échantillon&nbsp;; TEST jamais affiché.</div>
+  </header>
+
+  <div id="erreur" class="card erreur cache"></div>
+
+  <div id="app" class="cache">
+    <section class="card" aria-labelledby="h-filtres">
+      <h2 id="h-filtres">Conditions de départ (filtres sur statistiques TRAIN)</h2>
+      <div class="grille" id="filtres"></div>
+      <p class="compte" id="compte"></p>
+      <button type="button" id="reset">Réinitialiser les filtres</button>
+    </section>
+
+    <section class="card" aria-labelledby="h-liste">
+      <h2 id="h-liste">Variantes</h2>
+      <div class="table-wrap"><table id="liste"></table></div>
+      <p class="note" id="note-ref"></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-g1">
+      <h2 id="h-g1">1. Courbe finale : combinaison des variantes retenues</h2>
+      <label class="note"><input type="checkbox" id="log"> échelle logarithmique</label>
+      <div id="g1" class="graphe"></div>
+      <p class="legende-lecture">Comment lire&nbsp;: capital composé, base 100, net de frais. Traits fins gris = chaque variante retenue&nbsp;;
+        trait gras = leur combinaison (<span id="mode-comb">moyenne équipondérée</span>). Zone grisée = TRAIN (sélection)&nbsp;;
+        à droite de la ligne = VAL (hors échantillon). Une courbe qui monte en gris puis plonge à droite est la signature d'un overfit.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-g2">
+      <h2 id="h-g2">2. Drawdown de la combinaison</h2>
+      <div id="g2" class="graphe petit"></div>
+      <p class="legende-lecture">Comment lire&nbsp;: perte depuis le dernier sommet de la courbe composée. Plus c'est profond et long, plus la stratégie est dure à tenir.</p>
+    </section>
+
+    <div class="grille">
+      <section class="card" aria-labelledby="h-metriques">
+        <h2 id="h-metriques">Métriques de la combinaison</h2>
+        <div class="table-wrap"><table id="metriques"></table></div>
+        <p class="note">Recalculées dans le navigateur à partir des rendements quotidiens nets. Sharpe annualisé par √252, rendement annualisé = moyenne × 252.</p>
+      </section>
+      <section class="card" aria-labelledby="h-overfit">
+        <div class="overfit">
+          <div class="feu" id="feu" aria-hidden="true"></div>
+          <div>
+            <h2 id="h-overfit">Overfit&nbsp;? <span id="overfit-titre"></span></h2>
+            <p id="overfit-texte"></p>
+            <p class="note">Règle&nbsp;: vert si Sharpe VAL ≥ 0,5 × Sharpe TRAIN et &gt; 0&nbsp;; orange si VAL positif mais très dégradé&nbsp;; rouge si Sharpe VAL ≤ 0.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="h-g3">
+      <h2 id="h-g3">3. Sharpe TRAIN contre Sharpe VAL, toutes les variantes</h2>
+      <label class="note cache" id="zoom-label"><input type="checkbox" id="zoom" checked> recadrer (masquer les valeurs extrêmes)</label>
+      <div id="g3" class="graphe"></div>
+      <p class="note" id="hors-cadre"></p>
+      <p class="legende-lecture">Comment lire&nbsp;: un point par variante testée, y compris celles écartées. Sur la diagonale, VAL = TRAIN (pas d'overfit).
+        Sous la diagonale, la variante est moins bonne hors échantillon. Un nuage plaqué sous la diagonale, avec des Sharpe TRAIN flatteurs
+        et des Sharpe VAL autour de zéro, est typique d'une sélection sur du bruit.</p>
+    </section>
+  </div>
+
+  <p class="note">Rendements quotidiens nets de frais. Aucune donnée postérieure à la fin de VAL n'est chargée ni affichée.</p>
+</main>
+
+<script src="data.js" onerror="void 0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.35.0/plotly.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var ANNEE = 252;
+  var $ = function (s) { return document.querySelector(s); };
+  var fmtN = function (x, d) {
+    if (x === null || x === undefined || !isFinite(x)) return 'n/d';
+    return x.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  };
+  var fmtP = function (x, d) { return (x === null || x === undefined || !isFinite(x)) ? 'n/d' : fmtN(100 * x, d) + ' %'; };
+  var css = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var echap = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  };
+
+  var D = null, S = null, etat = {};
+
+  // ------------------------------------------------------------------ chargement
+  function montrerErreur(html) {
+    var e = $('#erreur'); e.innerHTML = html; e.classList.remove('cache');
+  }
+
+  function demarrer() {
+    if (typeof Plotly === 'undefined') {
+      montrerErreur('<strong>Plotly n\'a pas pu être chargé</strong> (connexion requise vers cdnjs.cloudflare.com). Recharger la page une fois en ligne.');
+      return;
+    }
+    if (window.DATA) { init(window.DATA); return; }
+    fetch('data.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(init)
+      .catch(function () {
+        montrerErreur('<strong>Impossible de charger les données.</strong> La page est probablement ouverte en <code>file://</code> sans <code>data.js</code>. ' +
+          'Lancer <code>python -m http.server</code> dans le dossier <code>docs/</code> puis ouvrir <code>http://localhost:8000/</code>, ' +
+          'ou régénérer <code>data.js</code> avec <code>scripts/exporter_dashboard.py</code>.');
+      });
+  }
+
+  // ------------------------------------------------------------------ préparation
+  function dernierIndexInf(dates, borne) {
+    var k = -1;
+    for (var i = 0; i < dates.length; i++) { if (dates[i] <= borne) k = i; else break; }
+    return k;
+  }
+
+  function statsPeriode(r, a, b) {
+    var n = b - a + 1;
+    if (a < 0 || n < 2) return null;
+    var s = 0, i;
+    for (i = a; i <= b; i++) s += r[i];
+    var m = s / n, ss = 0;
+    for (i = a; i <= b; i++) ss += (r[i] - m) * (r[i] - m);
+    var sd = Math.sqrt(ss / (n - 1));
+    var eq = 1, pic = -Infinity, dd = 0;
+    for (i = a; i <= b; i++) { eq *= 1 + r[i]; if (eq > pic) pic = eq; var d = eq / pic - 1; if (d < dd) dd = d; }
+    return { n: n, sharpe: sd > 0 ? m / sd * Math.sqrt(ANNEE) : NaN, rend: m * ANNEE, vol: sd * Math.sqrt(ANNEE), dd: dd };
+  }
+
+  function preparer(donnees) {
+    var fr = donnees.frontieres || {};
+    var toutes = donnees.dates;
+    var iFin = dernierIndexInf(toutes, fr.val_fin);        // TEST jamais chargé : on coupe à la fin de VAL
+    if (iFin < 1) throw new Error('dates vides ou frontières invalides');
+    var dates = toutes.slice(0, iFin + 1);
+    var iTrain = dernierIndexInf(dates, fr.train_fin);
+    var N = dates.length;
+    var variantes = donnees.variantes.map(function (v) {
+      var r = new Float64Array(N);
+      for (var i = 0; i < N; i++) { var x = v.rendements[i]; r[i] = (x === null || x === undefined || !isFinite(x)) ? 0 : x; }
+      var i0 = 0;
+      if (v.debut) { i0 = dates.findIndex(function (d) { return d >= v.debut; }); if (i0 < 0) i0 = N; }
+      else { while (i0 < N && r[i0] === 0) i0++; }
+      var sT = statsPeriode(r, i0, iTrain), sV = statsPeriode(r, Math.max(i0, iTrain + 1), N - 1);
+      return { id: v.id, libelle: v.libelle || v.id, groupe: v.groupe || '', reference: !!v.reference, stats: v.stats || {},
+               brut: v, r: r, i0: i0, sT: sT, sV: sV };
+    });
+    return { dates: dates, N: N, iTrain: iTrain, trainFin: fr.train_fin, valFin: fr.val_fin, variantes: variantes };
+  }
+
+  // ------------------------------------------------------------------ filtres
+  function valeurFiltre(v, cle) {
+    if (v.stats && v.stats[cle] !== undefined && v.stats[cle] !== null) return v.stats[cle];
+    if (v.brut[cle] !== undefined && v.brut[cle] !== null) return v.brut[cle];
+    return undefined;
+  }
+
+  function construireFiltres() {
+    var conteneur = $('#filtres');
+    conteneur.innerHTML = '';
+    etat = {};
+    (D.filtres || []).forEach(function (f, k) {
+      var bloc = document.createElement('div');
+      bloc.className = 'filtre';
+      var valeurs = S.variantes.filter(function (v) { return !v.reference; })
+        .map(function (v) { return valeurFiltre(v, f.cle); }).filter(function (x) { return x !== undefined; });
+      if (f.type === 'choix') {
+        var uniques = Array.from(new Set(valeurs.map(String))).sort();
+        etat[f.cle] = { type: 'choix', coches: new Set(uniques) };
+        var html = '<label class="titre">' + echap(f.libelle) + '</label><div class="cases">';
+        uniques.forEach(function (u, j) {
+          html += '<label><input type="checkbox" checked data-cle="' + echap(f.cle) + '" data-val="' + echap(u) + '"> ' + echap(u) + '</label>';
+        });
+        bloc.innerHTML = html + '</div>';
+        conteneur.appendChild(bloc);
+        bloc.querySelectorAll('input').forEach(function (c) {
+          c.addEventListener('change', function () {
+            var e = etat[c.dataset.cle].coches;
+            if (c.checked) e.add(c.dataset.val); else e.delete(c.dataset.val);
+            rafraichir();
+          });
+        });
+      } else {
+        var nums = valeurs.filter(function (x) { return typeof x === 'number' && isFinite(x); });
+        if (!nums.length) return;
+        var mn = Math.min.apply(null, nums), mx = Math.max.apply(null, nums);
+        var entier = nums.every(function (x) { return Number.isInteger(x); });
+        var pas = f.pas || (entier ? 1 : Math.max((mx - mn) / 200, 1e-6));
+        if (!entier && !f.pas) pas = Number(pas.toPrecision(1));
+        if (!(pas > 0)) pas = 1;
+        var lo = Math.floor(mn / pas) * pas, hi = Math.ceil(mx / pas) * pas;
+        if (hi === lo) hi = lo + pas;
+        var est_min = f.type === 'min';
+        var init = est_min ? lo : hi;
+        etat[f.cle] = { type: f.type, seuil: init, init: init };
+        var id = 'f' + k;
+        bloc.innerHTML = '<label class="titre" for="' + id + 'n">' + echap(f.libelle) + '</label>' +
+          '<div class="ligne"><input type="range" id="' + id + 'r" min="' + lo + '" max="' + hi + '" step="' + pas + '" value="' + init + '" aria-label="' + echap(f.libelle) + '">' +
+          '<input type="number" id="' + id + 'n" min="' + lo + '" max="' + hi + '" step="any" value="' + init + '"></div>';
+        conteneur.appendChild(bloc);
+        var r = bloc.querySelector('input[type=range]'), n = bloc.querySelector('input[type=number]');
+        var maj = function (val) {
+          if (val === '' || !isFinite(Number(val))) return;
+          etat[f.cle].seuil = Number(val); rafraichir();
+        };
+        r.addEventListener('input', function () { n.value = r.value; maj(r.value); });
+        n.addEventListener('input', function () { r.value = n.value; maj(n.value); });
+      }
+    });
+  }
+
+  function raisonsRejet(v) {
+    var raisons = [];
+    (D.filtres || []).forEach(function (f) {
+      var e = etat[f.cle]; if (!e) return;
+      var x = valeurFiltre(v, f.cle);
+      if (x === undefined) return;                       // statistique absente : ce filtre ne s'applique pas à cette variante
+      if (e.type === 'choix') { if (!e.coches.has(String(x))) raisons.push(f.libelle + ' = ' + x); }
+      else {
+        var tol = 1e-9 * (1 + Math.abs(e.seuil));
+        if (e.type === 'min' && x < e.seuil - tol) raisons.push(f.libelle + ' (' + fmtN(x, 2) + ' < ' + fmtN(e.seuil, 2) + ')');
+        if (e.type === 'max' && x > e.seuil + tol) raisons.push(f.libelle + ' (' + fmtN(x, 2) + ' > ' + fmtN(e.seuil, 2) + ')');
+      }
+    });
+    return raisons;
+  }
+
+  // ------------------------------------------------------------------ calculs
+  function combiner(retenues) {
+    var N = S.N, somme = new Float64Array(N), nb = new Int16Array(N), i;
+    retenues.forEach(function (v) { for (i = v.i0; i < N; i++) { somme[i] += v.r[i]; nb[i]++; } });
+    var r = new Float64Array(N), i0 = -1;
+    for (i = 0; i < N; i++) { if (nb[i] > 0) { r[i] = somme[i] / nb[i]; if (i0 < 0) i0 = i; } }
+    return { r: r, i0: i0 };
+  }
+
+  function equite(r, i0) {                              // base 100 composée ; NaN avant le début
+    var N = r.length, out = new Array(N), eq = 100;
+    for (var i = 0; i < N; i++) {
+      if (i0 < 0 || i < i0) { out[i] = null; continue; }
+      eq *= 1 + r[i]; out[i] = eq > 0 ? eq : null;
+    }
+    return out;
+  }
+
+  function drawdown(eq) {
+    var pic = -Infinity;
+    return eq.map(function (x) { if (x === null) return null; if (x > pic) pic = x; return 100 * (x / pic - 1); });
+  }
+
+  // ------------------------------------------------------------------ rendu
+  function tableauListe(retenuesIds) {
+    var colTrades = S.variantes.some(function (v) { return v.stats.nb_trades_train !== undefined; });
+    var h = '<thead><tr><th class="gauche">Variante</th><th class="gauche masque-mobile">Famille</th>' +
+      (colTrades ? '<th class="masque-mobile">Trades TRAIN</th>' : '') + '<th>Sharpe TRAIN</th><th>Sharpe VAL</th><th class="gauche">Statut</th></tr></thead><tbody>';
+    S.variantes.forEach(function (v) {
+      var ok = v.reference ? null : retenuesIds.has(v.id);
+      var cls = v.reference ? 'reference' : (ok ? '' : 'ecartee');
+      var statut = v.reference ? 'référence (non combinée)' : (ok ? 'retenue' : 'écartée');
+      var puce = '<span class="puce" style="background:' + (v.reference ? 'var(--ref)' : (ok ? 'var(--accent)' : 'var(--gris)')) + '"></span>';
+      var raison = '';
+      if (!v.reference && !ok) raison = '<br>' + echap(raisonsRejet(v).join(' ; '));
+      h += '<tr class="' + cls + '"><td class="gauche">' + puce + '<strong>' + echap(v.id) + '</strong> ' + echap(v.libelle) + '</td>' +
+        '<td class="gauche masque-mobile">' + echap(v.groupe) + '</td>' +
+        (colTrades ? '<td class="masque-mobile">' + (v.stats.nb_trades_train !== undefined ? fmtN(v.stats.nb_trades_train, 0) : 'n/d') + '</td>' : '') +
+        '<td>' + fmtN(v.sT && v.sT.sharpe, 2) + '</td><td>' + fmtN(v.sV && v.sV.sharpe, 2) + '</td>' +
+        '<td class="gauche raison">' + statut + (raison ? '<span class="note">' + raison + '</span>' : '') + '</td></tr>';
+    });
+    $('#liste').innerHTML = h + '</tbody>';
+  }
+
+  function baseLayout(extra) {
+    var base = {
+      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: css('--fg'), size: 12, family: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
+      margin: { l: 52, r: 12, t: 12, b: 40 },
+      xaxis: { gridcolor: css('--grid'), linecolor: css('--border'), zeroline: false, automargin: true },
+      yaxis: { gridcolor: css('--grid'), linecolor: css('--border'), zerolinecolor: css('--border'), automargin: true },
+      hovermode: 'x unified'
+    };
+    return Object.assign(base, extra || {});
+  }
+
+  function zones(ymaxPaper) {
+    var debut = S.dates[0];
+    return {
+      shapes: [
+        { type: 'rect', xref: 'x', yref: 'paper', x0: debut, x1: S.trainFin, y0: 0, y1: 1, fillcolor: css('--zone'), line: { width: 0 }, layer: 'below' },
+        { type: 'line', xref: 'x', yref: 'paper', x0: S.trainFin, x1: S.trainFin, y0: 0, y1: 1, line: { color: css('--muted'), width: 1, dash: 'dash' } }
+      ],
+      annotations: [
+        { xref: 'x', yref: 'paper', x: debut, xanchor: 'left', y: ymaxPaper, yanchor: 'top', text: 'TRAIN (sélection)', showarrow: false, font: { size: 11, color: css('--muted') } },
+        { xref: 'x', yref: 'paper', x: S.trainFin, xanchor: 'left', y: ymaxPaper, yanchor: 'top', text: ' VAL (hors échantillon)', showarrow: false, font: { size: 11, color: css('--muted') } }
+      ]
+    };
+  }
+
+  var CONFIG = { responsive: true, displaylogo: false, displayModeBar: false };
+
+  function graphe1(retenues, comb, refs) {
+    var traces = [], premier = true;
+    retenues.forEach(function (v) {
+      var eq = equite(v.r, v.i0);
+      traces.push({ x: S.dates, y: eq, type: 'scatter', mode: 'lines', name: 'Variantes retenues (fines)', legendgroup: 'fines',
+        showlegend: premier, line: { color: css('--gris'), width: 1 }, hovertemplate: v.id + ' : %{y:.1f}<extra></extra>', text: v.libelle });
+      premier = false;
+    });
+    refs.forEach(function (v) {
+      traces.push({ x: S.dates, y: equite(v.r, v.i0), type: 'scatter', mode: 'lines', name: 'Référence : ' + v.id,
+        line: { color: css('--ref'), width: 1.5, dash: 'dot' }, hovertemplate: v.id + ' : %{y:.1f}<extra></extra>' });
+    });
+    if (comb.i0 >= 0) {
+      traces.push({ x: S.dates, y: equite(comb.r, comb.i0), type: 'scatter', mode: 'lines', name: 'Combinaison (' + retenues.length + ')',
+        line: { color: css('--accent'), width: 3 }, hovertemplate: 'Combinaison : %{y:.1f}<extra></extra>' });
+    }
+    var z = zones(1);
+    var lay = baseLayout({
+      shapes: z.shapes, annotations: z.annotations,
+      yaxis: { title: { text: 'capital (base 100)' }, type: $('#log').checked ? 'log' : 'linear', gridcolor: css('--grid'), linecolor: css('--border'), automargin: true },
+      legend: { orientation: 'h', y: -0.14, x: 0, font: { size: 11 } }, margin: { l: 56, r: 12, t: 12, b: 70 }
+    });
+    Plotly.react('g1', traces, lay, CONFIG);
+  }
+
+  function graphe2(comb) {
+    var dd = comb.i0 >= 0 ? drawdown(equite(comb.r, comb.i0)) : [];
+    var z = zones(1);
+    var lay = baseLayout({
+      shapes: z.shapes, annotations: [],
+      yaxis: { title: { text: 'drawdown (%)' }, ticksuffix: ' %', gridcolor: css('--grid'), linecolor: css('--border'), automargin: true }, showlegend: false
+    });
+    Plotly.react('g2', [{ x: S.dates, y: dd, type: 'scatter', mode: 'lines', fill: 'tozeroy', line: { color: css('--dd'), width: 1 },
+      fillcolor: 'rgba(185,28,28,.25)', hovertemplate: 'drawdown : %{y:.1f} %<extra></extra>' }], lay, CONFIG);
+  }
+
+  function graphe3(retenuesIds) {
+    var groupes = { r: [], a: [], f: [] };
+    S.variantes.forEach(function (v) {
+      if (!v.sT || !v.sV || !isFinite(v.sT.sharpe) || !isFinite(v.sV.sharpe)) return;
+      (v.reference ? groupes.f : (retenuesIds.has(v.id) ? groupes.r : groupes.a)).push(v);
+    });
+    var tous = [].concat(groupes.r, groupes.a, groupes.f);
+    var xs = tous.map(function (v) { return v.sT.sharpe; }).concat(tous.map(function (v) { return v.sV.sharpe; }));
+    var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs);
+    // recadrage robuste : médiane ± 5 MAD (au moins ± 1) ; les points hors cadre sont listés sous le graphe
+    var tries = xs.slice().sort(function (a, b) { return a - b; });
+    var med = tries[Math.floor(tries.length / 2)];
+    var ecarts = xs.map(function (x) { return Math.abs(x - med); }).sort(function (a, b) { return a - b; });
+    var demi = Math.max(5 * ecarts[Math.floor(ecarts.length / 2)], 1);
+    var cLo = med - demi, cHi = med + demi;
+    var hors = tous.filter(function (v) { return v.sT.sharpe < cLo || v.sT.sharpe > cHi || v.sV.sharpe < cLo || v.sV.sharpe > cHi; });
+    var zoomer = hors.length > 0 && $('#zoom').checked;
+    $('#zoom-label').classList.toggle('cache', hors.length === 0);
+    $('#hors-cadre').textContent = zoomer ? 'Hors cadre (décocher « recadrer » pour les voir) : ' + hors.map(function (v) {
+      return v.id + ' (TRAIN ' + fmtN(v.sT.sharpe, 2) + ' ; VAL ' + fmtN(v.sV.sharpe, 2) + ')'; }).join(', ') + '.' : '';
+    if (zoomer) { lo = Math.max(lo, cLo); hi = Math.min(hi, cHi); }
+    var marge = 0.08 * (hi - lo || 1);
+    lo -= marge; hi += marge;
+    var tr = function (liste, nom, couleur, symbole, taille) {
+      return {
+        x: liste.map(function (v) { return v.sT.sharpe; }), y: liste.map(function (v) { return v.sV.sharpe; }),
+        text: liste.map(function (v) { return v.id; }), customdata: liste.map(function (v) { return v.libelle; }),
+        type: 'scatter', mode: 'markers+text', textposition: 'top center', textfont: { size: 10, color: css('--muted') },
+        name: nom, marker: { color: couleur, size: taille, symbol: symbole, line: { color: css('--card'), width: 1 } },
+        hovertemplate: '<b>%{text}</b> %{customdata}<br>TRAIN %{x:.2f} · VAL %{y:.2f}<extra></extra>'
+      };
+    };
+    var traces = [
+      { x: [lo, hi], y: [lo, hi], type: 'scatter', mode: 'lines', name: 'VAL = TRAIN', line: { color: css('--muted'), width: 1, dash: 'dash' }, hoverinfo: 'skip' },
+      tr(groupes.a, 'Écartées', css('--gris'), 'circle', 9),
+      tr(groupes.r, 'Retenues', css('--accent'), 'circle', 12),
+      tr(groupes.f, 'Référence', css('--ref'), 'diamond', 12)
+    ];
+    var lay = baseLayout({
+      hovermode: 'closest',
+      xaxis: { title: { text: 'Sharpe TRAIN' }, range: [lo, hi], gridcolor: css('--grid'), linecolor: css('--border'), zerolinecolor: css('--border'), automargin: true },
+      yaxis: { title: { text: 'Sharpe VAL' }, range: [lo, hi], gridcolor: css('--grid'), linecolor: css('--border'), zerolinecolor: css('--border'), automargin: true },
+      legend: { orientation: 'h', y: -0.2, x: 0, font: { size: 11 } }, margin: { l: 56, r: 12, t: 12, b: 70 }
+    });
+    Plotly.react('g3', traces, lay, CONFIG);
+  }
+
+  function tableauMetriques(retenues, comb) {
+    var T = comb.i0 >= 0 ? statsPeriode(comb.r, comb.i0, S.iTrain) : null;
+    var V = comb.i0 >= 0 ? statsPeriode(comb.r, Math.max(comb.i0, S.iTrain + 1), S.N - 1) : null;
+    var ligne = function (nom, a, b) { return '<tr><td class="gauche">' + nom + '</td><td>' + a + '</td><td>' + b + '</td></tr>'; };
+    var h = '<thead><tr><th class="gauche">Métrique</th><th>TRAIN</th><th>VAL</th></tr></thead><tbody>';
+    if (!T || !V) { $('#metriques').innerHTML = h + '<tr><td colspan="3">Aucune variante retenue.</td></tr></tbody>'; return { T: T, V: V }; }
+    h += ligne('Sharpe annualisé', fmtN(T.sharpe, 2), fmtN(V.sharpe, 2));
+    h += ligne('Rendement annualisé', fmtP(T.rend, 1), fmtP(V.rend, 1));
+    h += ligne('Volatilité annualisée', fmtP(T.vol, 1), fmtP(V.vol, 1));
+    h += ligne('Drawdown max', fmtP(T.dd, 1), fmtP(V.dd, 1));
+    var fournis = retenues.length && retenues.every(function (v) { return v.stats.nb_trades_train !== undefined && v.stats.nb_trades_val !== undefined; });
+    if (fournis) {
+      var sT = 0, sV = 0;
+      retenues.forEach(function (v) { sT += v.stats.nb_trades_train; sV += v.stats.nb_trades_val; });
+      h += ligne('Nb de trades (somme des variantes)', fmtN(sT, 0), fmtN(sV, 0));
+    }
+    h += ligne('Jours observés', fmtN(T.n, 0), fmtN(V.n, 0));
+    var ratio = (T.sharpe > 0) ? V.sharpe / T.sharpe : NaN;
+    h += ligne('Rapport Sharpe VAL / TRAIN', '', T.sharpe > 0 ? fmtN(ratio, 2) : 'n/d (TRAIN ≤ 0)');
+    $('#metriques').innerHTML = h + '</tbody>';
+    return { T: T, V: V };
+  }
+
+  function indicateurOverfit(m, nbRetenues) {
+    var feu = $('#feu'), titre = $('#overfit-titre'), txt = $('#overfit-texte');
+    feu.className = 'feu';
+    if (!nbRetenues || !m.T || !m.V) {
+      titre.textContent = ''; txt.textContent = 'Aucune variante retenue : assouplir les filtres pour juger la combinaison.'; return;
+    }
+    var t = m.T.sharpe, v = m.V.sharpe;
+    var T = fmtN(t, 2), V = fmtN(v, 2);
+    if (!isFinite(t) || !isFinite(v)) { titre.textContent = 'indéterminé'; txt.textContent = 'Sharpe non défini (volatilité nulle sur une des périodes).'; return; }
+    if (v > 0 && t > 0 && v >= 0.5 * t) {
+      feu.classList.add('vert'); titre.textContent = 'peu probable';
+      txt.textContent = 'Sharpe VAL ' + V + ' ≥ 0,5 × Sharpe TRAIN (' + T + ') et positif : la performance survit hors échantillon (VAL = ' + fmtN(100 * v / t, 0) + ' % de TRAIN).';
+    } else if (v > 0) {
+      feu.classList.add('orange'); titre.textContent = 'à surveiller';
+      txt.textContent = t > 0
+        ? 'Sharpe VAL ' + V + ' < 0,5 × Sharpe TRAIN (' + T + ') : forte dégradation hors échantillon, même si VAL reste positif.'
+        : 'Sharpe VAL ' + V + ' positif alors que TRAIN ne l\'est pas (' + T + ') : probablement du hasard, pas un signal confirmé.';
+    } else {
+      feu.classList.add('rouge');
+      titre.textContent = t > 0 ? 'oui' : 'non, mais rien ne marche';
+      txt.textContent = t > 0
+        ? 'Sharpe TRAIN ' + T + ' → VAL ' + V + ' : effondrement hors échantillon, signature d\'une sélection sur du bruit.'
+        : 'Sharpe TRAIN ' + T + ' et VAL ' + V + ' : tous deux ≤ 0. Ce n\'est pas de l\'overfit au sens strict (il n\'y avait pas de performance à effondrer) : la combinaison ne gagne simplement pas d\'argent.';
+    }
+  }
+
+  function rafraichir() {
+    var retenues = S.variantes.filter(function (v) { return !v.reference && raisonsRejet(v).length === 0; });
+    var refs = S.variantes.filter(function (v) { return v.reference; });
+    var ids = new Set(retenues.map(function (v) { return v.id; }));
+    var total = S.variantes.filter(function (v) { return !v.reference; }).length;
+    $('#compte').textContent = retenues.length + ' variante' + (retenues.length > 1 ? 's' : '') + ' retenue' + (retenues.length > 1 ? 's' : '') + ' sur ' + total + '.';
+    tableauListe(ids);
+    var comb = combiner(retenues);
+    graphe1(retenues, comb, refs);
+    graphe2(comb);
+    graphe3(ids);
+    indicateurOverfit(tableauMetriques(retenues, comb), retenues.length);
+  }
+
+  function init(donnees) {
+    try {
+      D = donnees; S = preparer(donnees);
+    } catch (e) {
+      montrerErreur('<strong>Données invalides</strong> : ' + echap(e.message)); return;
+    }
+    $('#titre').textContent = D.titre || 'Tableau de bord';
+    document.title = D.titre || document.title;
+    $('#sous-titre').textContent = D.sous_titre || '';
+    $('#frais').textContent = D.frais || '';
+    if (D.frais) $('#frais-carte').classList.remove('cache');
+    var nbRef = S.variantes.filter(function (v) { return v.reference; }).length;
+    $('#note-ref').textContent = nbRef ? 'Les variantes « référence » (pointillés orange) sont affichées mais jamais incluses dans la combinaison.' : '';
+    construireFiltres();
+    $('#app').classList.remove('cache');
+    $('#log').addEventListener('change', rafraichir);
+    $('#zoom').addEventListener('change', rafraichir);
+    $('#reset').addEventListener('click', function () { construireFiltres(); rafraichir(); });
+    rafraichir();
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var rerender = function () { rafraichir(); };
+    if (mq.addEventListener) mq.addEventListener('change', rerender); else if (mq.addListener) mq.addListener(rerender);
+    window.__dashboard = { S: S, D: D, statsPeriode: statsPeriode };      // pour tests manuels dans la console
+  }
+
+  demarrer();
+})();
+</script>
+</body>
+</html>

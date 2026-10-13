@@ -1,0 +1,2618 @@
+{
+ "projet": "Exécution FX : coût d'exécution quotidien, TRAIN | VAL, 28 variantes",
+ "meta": {
+  "seed": 20261013,
+  "periodes": {
+   "TRAIN": [
+    "2010-01-04",
+    "2018-12-31"
+   ],
+   "VAL": [
+    "2019-01-02",
+    "2022-12-30"
+   ]
+  },
+  "jours_utilises": {
+   "TRAIN": 2329,
+   "VAL": 1037
+  },
+  "jours_ouvres": {
+   "TRAIN": 2342,
+   "VAL": 1043
+  },
+  "test": "2023+ scellé : jamais chargé (donnees.charger_annee refuse l'année)",
+  "bootstrap": "1 000 rééchantillons par blocs de 5 jours, IC95 percentile, mêmes blocs pour toutes les stratégies",
+  "convention_cout_du_jour": "moyenne du shortfall d'un achat et d'une vente de 50 M EUR : la dérive du prix s'annule, il reste le coût d'impact du modèle avec l'activité réelle du jour",
+  "convention_cout_total_eur": "n_jours x (1 achat + 1 vente) x 50 M EUR x shortfall moyen",
+  "train_in_sample": "profil d'activité, sigma et theta d'Almgren-Chriss, planning VWAP calibrés sur TRAIN : le rejeu TRAIN est in-sample pour eux ; l'impact est supposé, jamais estimé",
+  "duree_s": 49.4
+ },
+ "parametres": {
+  "notionnel_eur": 50000000.0,
+  "horizon_min": 60,
+  "debut_heure_ny": 8,
+  "eta_bps": 10.0,
+  "gamma_bps": 0.5,
+  "demi_spread_bps": 0.1,
+  "volume_jour_eur": 5000000000.0,
+  "participation_twap_nominale": 0.1486025973699636,
+  "y_racine": 1.5572366550907721,
+  "sigma_ac_bps": 2.677335530922273,
+  "theta_ac_bps": 94.0871335611765,
+  "lambdas_ac": [
+   0.01,
+   0.05,
+   0.3
+  ],
+  "kappa_T_des_lambdas": [
+   1.658260910401486,
+   3.707512266298386,
+   9.074307450022213
+  ]
+ },
+ "modeles": {
+  "lin": {
+   "libelle": "linéaire",
+   "court": "lin",
+   "type": "lineaire",
+   "facteur": 1.0
+  },
+  "rac": {
+   "libelle": "racine carrée",
+   "court": "rac",
+   "type": "racine",
+   "facteur": 1.0
+  },
+  "lin_x05": {
+   "libelle": "linéaire ×0,5",
+   "court": "lin×0,5",
+   "type": "lineaire",
+   "facteur": 0.5
+  },
+  "lin_x2": {
+   "libelle": "linéaire ×2",
+   "court": "lin×2",
+   "type": "lineaire",
+   "facteur": 2.0
+  }
+ },
+ "strategies": {
+  "TWAP": {
+   "libelle": "TWAP",
+   "court": "TWAP",
+   "famille": "TWAP"
+  },
+  "VWAP-proxy": {
+   "libelle": "VWAP-proxy",
+   "court": "VWAP",
+   "famille": "VWAP"
+  },
+  "AC-lam1": {
+   "libelle": "Almgren-Chriss λ=0,01",
+   "court": "AC1",
+   "famille": "Almgren-Chriss"
+  },
+  "AC-lam2": {
+   "libelle": "Almgren-Chriss λ=0,05",
+   "court": "AC2",
+   "famille": "Almgren-Chriss"
+  },
+  "AC-lam3": {
+   "libelle": "Almgren-Chriss λ=0,3",
+   "court": "AC3",
+   "famille": "Almgren-Chriss"
+  },
+  "IS-front-loaded": {
+   "libelle": "IS front-loaded",
+   "court": "IS",
+   "famille": "IS"
+  },
+  "POV-proxy": {
+   "libelle": "POV-proxy",
+   "court": "POV",
+   "famille": "POV"
+  }
+ },
+ "regime": {
+  "TRAIN": {
+   "sigma_rms_fenetre_bps": 2.676872203158342,
+   "m_moyen": 0.9960889249458446,
+   "m_median": 0.9218484160040413,
+   "inverse_m_moyen": 1.1766361753184384
+  },
+  "VAL": {
+   "sigma_rms_fenetre_bps": 2.1838537910322513,
+   "m_moyen": 0.8382273085715443,
+   "m_median": 0.7240985978337754,
+   "inverse_m_moyen": 1.4309041263254425
+  }
+ },
+ "robustesse": {
+  "lin": {
+   "spearman_cout_moyen_train_val": 1.0,
+   "rapport_val_sur_train_cout_moyen": {
+    "TWAP": 1.1819870034427373,
+    "VWAP-proxy": 1.180443045509043,
+    "AC-lam1": 1.1867427829540866,
+    "AC-lam2": 1.1989187457159807,
+    "AC-lam3": 1.2087770471168071,
+    "IS-front-loaded": 1.1930507372661145,
+    "POV-proxy": 1.154962099837997
+   },
+   "meilleure_par_lambda_train": {
+    "lam=0.01": "POV-proxy",
+    "lam=0.05": "AC-lam1",
+    "lam=0.3": "AC-lam2"
+   },
+   "meilleure_par_lambda_val": {
+    "lam=0.01": "POV-proxy",
+    "lam=0.05": "AC-lam1",
+    "lam=0.3": "AC-lam2"
+   }
+  },
+  "rac": {
+   "spearman_cout_moyen_train_val": 0.9642857142857145,
+   "rapport_val_sur_train_cout_moyen": {
+    "TWAP": 1.0836711233879914,
+    "VWAP-proxy": 1.0855443938025997,
+    "AC-lam1": 1.083673576392504,
+    "AC-lam2": 1.0862080040096647,
+    "AC-lam3": 1.0915175373171366,
+    "IS-front-loaded": 1.08462613494785,
+    "POV-proxy": 1.0476107497820388
+   },
+   "meilleure_par_lambda_train": {
+    "lam=0.01": "AC-lam2",
+    "lam=0.05": "AC-lam2",
+    "lam=0.3": "AC-lam3"
+   },
+   "meilleure_par_lambda_val": {
+    "lam=0.01": "AC-lam1",
+    "lam=0.05": "AC-lam2",
+    "lam=0.3": "AC-lam3"
+   }
+  },
+  "lin_x05": {
+   "spearman_cout_moyen_train_val": 1.0,
+   "rapport_val_sur_train_cout_moyen": {
+    "TWAP": 1.1740432291506884,
+    "VWAP-proxy": 1.1722186803998051,
+    "AC-lam1": 1.1852212427368232,
+    "AC-lam2": 1.2002981636242858,
+    "AC-lam3": 1.2092969997467886,
+    "IS-front-loaded": 1.1872488947031972,
+    "POV-proxy": 1.1484916913164287
+   },
+   "meilleure_par_lambda_train": {
+    "lam=0.01": "POV-proxy",
+    "lam=0.05": "AC-lam1",
+    "lam=0.3": "AC-lam2"
+   },
+   "meilleure_par_lambda_val": {
+    "lam=0.01": "POV-proxy",
+    "lam=0.05": "AC-lam1",
+    "lam=0.3": "AC-lam2"
+   }
+  },
+  "lin_x2": {
+   "spearman_cout_moyen_train_val": 1.0,
+   "rapport_val_sur_train_cout_moyen": {
+    "TWAP": 1.186237171820299,
+    "VWAP-proxy": 1.1848570018602604,
+    "AC-lam1": 1.1881375358708741,
+    "AC-lam2": 1.196211082868691,
+    "AC-lam3": 1.2073369512231786,
+    "IS-front-loaded": 1.1960886062577925,
+    "POV-proxy": 1.1584134709665301
+   },
+   "meilleure_par_lambda_train": {
+    "lam=0.01": "VWAP-proxy",
+    "lam=0.05": "POV-proxy",
+    "lam=0.3": "AC-lam2"
+   },
+   "meilleure_par_lambda_val": {
+    "lam=0.01": "VWAP-proxy",
+    "lam=0.05": "POV-proxy",
+    "lam=0.3": "AC-lam2"
+   }
+  }
+ },
+ "variantes": {
+  "lin__TWAP": {
+   "id": "TWAP·lin",
+   "cle": "lin__TWAP",
+   "strategie": "TWAP",
+   "strategie_libelle": "TWAP",
+   "famille": "TWAP",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 1.913952226019609,
+    "std_theorique_bps": 10.403917004126999
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.1909387496682915,
+    "ic95_moyen_bps": [
+     2.139263753840492,
+     2.244388265568953
+    ],
+    "ecart_type_bps": 10.01447467729354,
+    "ic95_ecart_type_bps": [
+     9.354937062804218,
+     10.778082954378975
+    ],
+    "p95_bps": 16.517879381302407,
+    "ic95_p95_bps": [
+     15.839492074321937,
+     17.361343449985842
+    ],
+    "p05_bps": -13.255532656168997,
+    "cout_impact_moyen_bps": 2.1909387496682915,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 3.193835780289827,
+     "lam=0.05": 7.205423902775969,
+     "lam=0.3": 32.27784966831435
+    },
+    "ecart_type_marche_bps": 9.982583687296934,
+    "ecart_type_impact_jour_bps": 0.7732684597860946,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 10954.693748341459,
+    "cout_total_eur": 51026963.47977451
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.5896611274470014,
+    "ic95_moyen_bps": [
+     2.487052774602714,
+     2.69279552504657
+    ],
+    "ecart_type_bps": 8.262229178784452,
+    "ic95_ecart_type_bps": [
+     7.310214385357901,
+     9.431733791763174
+    ],
+    "p95_bps": 13.763730626213095,
+    "ic95_p95_bps": [
+     12.793366222244986,
+     14.83898323972583
+    ],
+    "p05_bps": -9.575538168474047,
+    "cout_impact_moyen_bps": 2.5896611274470014,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 3.2723054374745733,
+     "lam=0.05": 6.002882677584861,
+     "lam=0.3": 23.06899042827416
+    },
+    "ecart_type_marche_bps": 8.1940781374481,
+    "ecart_type_impact_jour_bps": 0.8939806099747963,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 12948.305637235007,
+    "cout_total_eur": 26854785.891625404
+   }
+  },
+  "lin__VWAP-proxy": {
+   "id": "VWAP·lin",
+   "cle": "lin__VWAP-proxy",
+   "strategie": "VWAP-proxy",
+   "strategie_libelle": "VWAP-proxy",
+   "famille": "VWAP",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 1.8315198312539063,
+    "std_theorique_bps": 11.112477910856319
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.0940057756720694,
+    "ic95_moyen_bps": [
+     2.0450360283212263,
+     2.1446571448255844
+    ],
+    "ecart_type_bps": 10.650627769040526,
+    "ic95_ecart_type_bps": [
+     9.962528881569723,
+     11.409024139466776
+    ],
+    "p95_bps": 17.441842660823202,
+    "ic95_p95_bps": [
+     16.636274988970793,
+     18.299150610604904
+    ],
+    "p05_bps": -13.911258426002522,
+    "cout_impact_moyen_bps": 2.0940057756720694,
+    "part_executee_mi_horizon": 0.4132718973757128,
+    "diff_moyen_vs_twap_bps": -0.09693297399622214,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.0997311207433684,
+     -0.09422772551926593
+    ],
+    "utilite": {
+     "lam=0.01": 3.228364494418641,
+     "lam=0.05": 7.765799369404927,
+     "lam=0.3": 36.12476733806921
+    },
+    "ecart_type_marche_bps": 10.623375811843307,
+    "ecart_type_impact_jour_bps": 0.7327869214791394,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 10470.028878360348,
+    "cout_total_eur": 48769394.5154025
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.4718545551478637,
+    "ic95_moyen_bps": [
+     2.374617873569502,
+     2.569589742402882
+    ],
+    "ecart_type_bps": 8.860723066058158,
+    "ic95_ecart_type_bps": [
+     7.795017906371512,
+     10.166566364133256
+    ],
+    "p95_bps": 14.444990545257054,
+    "ic95_p95_bps": [
+     13.100608856089531,
+     15.360216223276415
+    ],
+    "p05_bps": -10.34567800260053,
+    "cout_impact_moyen_bps": 2.4718545551478632,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": -0.11780657229913771,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.12320578264368805,
+     -0.11243490103321208
+    ],
+    "utilite": {
+     "lam=0.01": 3.256978687681615,
+     "lam=0.05": 6.397475217816619,
+     "lam=0.3": 26.025578531160395
+    },
+    "ecart_type_marche_bps": 8.800506972162816,
+    "ecart_type_impact_jour_bps": 0.8471796447338488,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 12359.272775739319,
+    "cout_total_eur": 25633131.736883346
+   }
+  },
+  "lin__AC-lam1": {
+   "id": "AC1·lin",
+   "cle": "lin__AC-lam1",
+   "strategie": "AC-lam1",
+   "strategie_libelle": "Almgren-Chriss λ=0,01",
+   "famille": "Almgren-Chriss",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 2.2127850589578237,
+    "std_theorique_bps": 8.509193435835652
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.542634533793861,
+    "ic95_moyen_bps": [
+     2.481097351365546,
+     2.6062849039195735
+    ],
+    "ecart_type_bps": 8.25300323476489,
+    "ic95_ecart_type_bps": [
+     7.660053646934606,
+     8.970990826388267
+    ],
+    "p95_bps": 14.097628183814306,
+    "ic95_p95_bps": [
+     13.652919910951764,
+     14.630416230585967
+    ],
+    "p05_bps": -10.396618700875045,
+    "cout_impact_moyen_bps": 2.542634533793861,
+    "part_executee_mi_horizon": 0.6333980370107611,
+    "diff_moyen_vs_twap_bps": 0.3516957841255697,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.3418335975250542,
+     0.3618966383506209
+    ],
+    "utilite": {
+     "lam=0.01": 3.2237551577242582,
+     "lam=0.05": 5.948237653445847,
+     "lam=0.3": 22.976253251705778
+    },
+    "ecart_type_marche_bps": 8.199728822334382,
+    "ecart_type_impact_jour_bps": 0.920846949547696,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 12713.172668969308,
+    "cout_total_eur": 59217958.292059034
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 3.0174531826696933,
+    "ic95_moyen_bps": [
+     2.895261998587372,
+     3.140270807287764
+    ],
+    "ecart_type_bps": 6.76460871105709,
+    "ic95_ecart_type_bps": [
+     6.105761102339366,
+     7.567527473269553
+    ],
+    "p95_bps": 12.515155329740141,
+    "ic95_p95_bps": [
+     11.728334405502961,
+     13.031286035875093
+    ],
+    "p05_bps": -7.642726892036909,
+    "cout_impact_moyen_bps": 3.0174531826696933,
+    "part_executee_mi_horizon": 0.633398037010761,
+    "diff_moyen_vs_twap_bps": 0.4277920552226919,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.4082092239846581,
+     0.44747528224119365
+    ],
+    "utilite": {
+     "lam=0.01": 3.475052492806788,
+     "lam=0.05": 5.305449733355166,
+     "lam=0.3": 16.74543248678253
+    },
+    "ecart_type_marche_bps": 6.662140271435035,
+    "ecart_type_impact_jour_bps": 1.0645970454786202,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 15087.265913348467,
+    "cout_total_eur": 31290989.50428472
+   }
+  },
+  "lin__AC-lam2": {
+   "id": "AC2·lin",
+   "cle": "lin__AC-lam2",
+   "strategie": "AC-lam2",
+   "strategie_libelle": "Almgren-Chriss λ=0,05",
+   "famille": "Almgren-Chriss",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 3.7098422663473327,
+    "std_theorique_bps": 5.696523143737324
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 4.3046897001856115,
+    "ic95_moyen_bps": [
+     4.193714125428922,
+     4.419476177717393
+    ],
+    "ecart_type_bps": 5.81867645560551,
+    "ic95_ecart_type_bps": [
+     5.292085928670432,
+     6.5797986254468155
+    ],
+    "p95_bps": 12.018439426536048,
+    "ic95_p95_bps": [
+     11.765681875307745,
+     12.35635498006924
+    ],
+    "p05_bps": -4.833379436243252,
+    "cout_impact_moyen_bps": 4.304689700185612,
+    "part_executee_mi_horizon": 0.8471041629842978,
+    "diff_moyen_vs_twap_bps": 2.11375095051732,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.0544503715884304,
+     2.1750879121484408
+    ],
+    "utilite": {
+     "lam=0.01": 4.643259657135791,
+     "lam=0.05": 5.997539484936507,
+     "lam=0.3": 14.461788408690978
+    },
+    "ecart_type_marche_bps": 5.575169558692592,
+    "ecart_type_impact_jour_bps": 1.660646709134639,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 21523.448500928058,
+    "cout_total_eur": 100256223.11732289
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 5.160973176043035,
+    "ic95_moyen_bps": [
+     4.940614746413398,
+     5.382461322630165
+    ],
+    "ecart_type_bps": 4.806332028640477,
+    "ic95_ecart_type_bps": [
+     4.518787323453029,
+     5.148504796420863
+    ],
+    "p95_bps": 11.83775647969429,
+    "ic95_p95_bps": [
+     11.58666161462911,
+     12.153833751609973
+    ],
+    "p05_bps": -3.3258248777347306,
+    "cout_impact_moyen_bps": 5.160973176043035,
+    "part_executee_mi_horizon": 0.8471041629842977,
+    "diff_moyen_vs_twap_bps": 2.5713120485960332,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.453561971810684,
+     2.6896657975835954
+    ],
+    "utilite": {
+     "lam=0.01": 5.3919814517383875,
+     "lam=0.05": 6.316014554519799,
+     "lam=0.3": 12.091221446903617
+    },
+    "ecart_type_marche_bps": 4.3912289144088605,
+    "ecart_type_impact_jour_bps": 1.9198842771829803,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 25804.865880215177,
+    "cout_total_eur": 53519291.835566275
+   }
+  },
+  "lin__AC-lam3": {
+   "id": "AC3·lin",
+   "cle": "lin__AC-lam3",
+   "strategie": "AC-lam3",
+   "strategie_libelle": "Almgren-Chriss λ=0,3",
+   "famille": "Almgren-Chriss",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 8.357367495656725,
+    "std_theorique_bps": 3.5028017962402247
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 9.775091188549949,
+    "ic95_moyen_bps": [
+     9.510598660356953,
+     10.048666393826542
+    ],
+    "ecart_type_bps": 5.324422198923052,
+    "ic95_ecart_type_bps": [
+     4.85299615395126,
+     5.911798842732422
+    ],
+    "p95_bps": 17.84523715693812,
+    "ic95_p95_bps": [
+     17.043567383677335,
+     18.866297349079527
+    ],
+    "p05_bps": 1.917423942049805,
+    "cout_impact_moyen_bps": 9.775091188549949,
+    "part_executee_mi_horizon": 0.9892973969393981,
+    "diff_moyen_vs_twap_bps": 7.584152438881658,
+    "ic95_diff_moyen_vs_twap_bps": [
+     7.371334906516462,
+     7.804278128257588
+    ],
+    "utilite": {
+     "lam=0.01": 10.058585906073795,
+     "lam=0.05": 11.192564776169178,
+     "lam=0.3": 18.27993271426532
+    },
+    "ecart_type_marche_bps": 3.558924521782501,
+    "ecart_type_impact_jour_bps": 3.9578857554682014,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 48875.455942749744,
+    "cout_total_eur": 227661873.78132832
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 11.815905862192928,
+    "ic95_moyen_bps": [
+     11.290716798841236,
+     12.343787425176943
+    ],
+    "ecart_type_bps": 5.2965113670793915,
+    "ic95_ecart_type_bps": [
+     5.0342689549840145,
+     5.556312113223278
+    ],
+    "p95_bps": 20.536078472155523,
+    "ic95_p95_bps": [
+     19.607337864347205,
+     21.570900217734348
+    ],
+    "p05_bps": 3.2783985398829016,
+    "cout_impact_moyen_bps": 11.815905862192928,
+    "part_executee_mi_horizon": 0.9892973969393978,
+    "diff_moyen_vs_twap_bps": 9.226244734745926,
+    "ic95_diff_moyen_vs_twap_bps": [
+     8.803664024238524,
+     9.650991900130373
+    ],
+    "utilite": {
+     "lam=0.01": 12.096436188808939,
+     "lam=0.05": 13.218557495272988,
+     "lam=0.3": 20.231815660673288
+    },
+    "ecart_type_marche_bps": 2.6576313618535092,
+    "ecart_type_impact_jour_bps": 4.575737025227688,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 59079.529310964645,
+    "cout_total_eur": 122530943.79094067
+   }
+  },
+  "lin__IS-front-loaded": {
+   "id": "IS·lin",
+   "cle": "lin__IS-front-loaded",
+   "strategie": "IS-front-loaded",
+   "strategie_libelle": "IS front-loaded",
+   "famille": "IS",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 2.794578449425438,
+    "std_theorique_bps": 8.010044480477374
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 3.2274039268146706,
+    "ic95_moyen_bps": [
+     3.1466553963676733,
+     3.3109253629162665
+    ],
+    "ecart_type_bps": 7.866850585880397,
+    "ic95_ecart_type_bps": [
+     7.260036760648612,
+     8.586256314695609
+    ],
+    "p95_bps": 13.910149686333074,
+    "ic95_p95_bps": [
+     13.444664292100775,
+     14.699832760298966
+    ],
+    "p05_bps": -9.233929965744654,
+    "cout_impact_moyen_bps": 3.2274039268146706,
+    "part_executee_mi_horizon": 0.6400000000000001,
+    "diff_moyen_vs_twap_bps": 1.036465177146379,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.0073916425271814,
+     1.0665370973473136
+    ],
+    "utilite": {
+     "lam=0.01": 3.846277308220338,
+     "lam=0.05": 6.321770833843008,
+     "lam=0.3": 21.793605368984693
+    },
+    "ecart_type_marche_bps": 7.771292634986802,
+    "ecart_type_impact_jour_bps": 1.2083269822955527,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 16137.019634073353,
+    "cout_total_eur": 75166237.45551367
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 3.850456634341796,
+    "ic95_moyen_bps": [
+     3.690118475217922,
+     4.0116168030325365
+    ],
+    "ecart_type_bps": 6.434249987274545,
+    "ic95_ecart_type_bps": [
+     5.796460344224599,
+     7.227832464859068
+    ],
+    "p95_bps": 12.324688610788884,
+    "ic95_p95_bps": [
+     11.777519937604351,
+     12.86618277967941
+    ],
+    "p05_bps": -6.534166390282156,
+    "cout_impact_moyen_bps": 3.8504566343417963,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 1.2607955068947945,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.203065700615208,
+     1.318821277985966
+    ],
+    "utilite": {
+     "lam=0.01": 4.26445236332922,
+     "lam=0.05": 5.92043527927892,
+     "lam=0.3": 16.27032850396454
+    },
+    "ecart_type_marche_bps": 6.262794788356252,
+    "ecart_type_impact_jour_bps": 1.3969545492394702,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 19252.28317170898,
+    "cout_total_eur": 39929235.298124425
+   }
+  },
+  "lin__POV-proxy": {
+   "id": "POV·lin",
+   "cle": "lin__POV-proxy",
+   "strategie": "POV-proxy",
+   "strategie_libelle": "POV-proxy",
+   "famille": "POV",
+   "modele": "lin",
+   "modele_libelle": "linéaire",
+   "facteur_impact": 1.0,
+   "theorie": null,
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.2949353324668906,
+    "ic95_moyen_bps": [
+     2.250313282686285,
+     2.3396740661773987
+    ],
+    "ecart_type_bps": 8.97896085928435,
+    "ic95_ecart_type_bps": [
+     8.426063794224572,
+     9.59902193180448
+    ],
+    "p95_bps": 15.55569628684149,
+    "ic95_p95_bps": [
+     15.040829291944169,
+     16.089092743837224
+    ],
+    "p05_bps": -11.708280874396248,
+    "cout_impact_moyen_bps": 2.2949353324668906,
+    "part_executee_mi_horizon": 0.5240387463906226,
+    "diff_moyen_vs_twap_bps": 0.10399658279859914,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.09324435805986045,
+     0.11571433663393828
+    ],
+    "utilite": {
+     "lam=0.01": 3.1011527135924943,
+     "lam=0.05": 6.326022238094909,
+     "lam=0.3": 26.481456766234995
+    },
+    "ecart_type_marche_bps": 8.951342299587179,
+    "ecart_type_impact_jour_bps": 0.6704586060973957,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 11474.676662334454,
+    "cout_total_eur": 53449043.89315388
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.650563330578372,
+    "ic95_moyen_bps": [
+     2.5659366693929204,
+     2.7408214595235236
+    ],
+    "ecart_type_bps": 7.5787534793402225,
+    "ic95_ecart_type_bps": [
+     6.8644509118421615,
+     8.444256270092083
+    ],
+    "p95_bps": 13.489113253734766,
+    "ic95_p95_bps": [
+     12.628130856828571,
+     14.198260148664183
+    ],
+    "p05_bps": -9.128399518542679,
+    "cout_impact_moyen_bps": 2.650563330578372,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.0609022031313704,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.04334065908544947,
+     0.08191143164727335
+    ],
+    "utilite": {
+     "lam=0.01": 3.224938373584487,
+     "lam=0.05": 5.522438545608948,
+     "lam=0.3": 19.88181462076183
+    },
+    "ecart_type_marche_bps": 7.519183185832171,
+    "ecart_type_impact_jour_bps": 0.7957057015803136,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 13252.816652891861,
+    "cout_total_eur": 27486341.73809772
+   }
+  },
+  "rac__TWAP": {
+   "id": "TWAP·rac",
+   "cle": "rac__TWAP",
+   "strategie": "TWAP",
+   "strategie_libelle": "TWAP",
+   "famille": "TWAP",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 1.913952226019609,
+    "std_theorique_bps": 10.403917004126999
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.8975576066772217,
+    "ic95_moyen_bps": [
+     1.8757617824965636,
+     1.9189748281574803
+    ],
+    "ecart_type_bps": 9.989497172353445,
+    "ic95_ecart_type_bps": [
+     9.326709751524868,
+     10.755625189108349
+    ],
+    "p95_bps": 16.478911529710413,
+    "ic95_p95_bps": [
+     15.762293647233106,
+     17.451153313768444
+    ],
+    "p05_bps": -13.131296228449438,
+    "cout_impact_moyen_bps": 1.8975576066772217,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 2.895458144241797,
+     "lam=0.05": 6.887060294500097,
+     "lam=0.3": 31.83457373361447
+    },
+    "ecart_type_marche_bps": 9.982583687296934,
+    "ecart_type_impact_jour_bps": 0.3136910456520197,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 9487.788033386109,
+    "cout_total_eur": 44194116.65951249
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.056328383321333,
+    "ic95_moyen_bps": [
+     2.0155301449283787,
+     2.096952594667991
+    ],
+    "ecart_type_bps": 8.221128512847775,
+    "ic95_ecart_type_bps": [
+     7.263340060150915,
+     9.392665099976222
+    ],
+    "p95_bps": 13.56628148284817,
+    "ic95_p95_bps": [
+     12.486123379077684,
+     14.731230828946389
+    ],
+    "p05_bps": -9.808896462749223,
+    "cout_impact_moyen_bps": 2.0563283833213326,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 2.7321979235689198,
+     "lam=0.05": 5.435676084559267,
+     "lam=0.3": 22.332414590748932
+    },
+    "ecart_type_marche_bps": 8.1940781374481,
+    "ecart_type_impact_jour_bps": 0.3493579902683639,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 10281.641916606664,
+    "cout_total_eur": 21324125.335042223
+   }
+  },
+  "rac__VWAP-proxy": {
+   "id": "VWAP·rac",
+   "cle": "rac__VWAP-proxy",
+   "strategie": "VWAP-proxy",
+   "strategie_libelle": "VWAP-proxy",
+   "famille": "VWAP",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 1.8315198312539063,
+    "std_theorique_bps": 11.112477910856319
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.1073936593445453,
+    "ic95_moyen_bps": [
+     2.0826456683751164,
+     2.1317117672256884
+    ],
+    "ecart_type_bps": 10.631353201265386,
+    "ic95_ecart_type_bps": [
+     9.940932919917575,
+     11.39223016767188
+    ],
+    "p95_bps": 17.606105973461037,
+    "ic95_p95_bps": [
+     16.77958710188996,
+     18.58927969029541
+    ],
+    "p05_bps": -13.749835856110979,
+    "cout_impact_moyen_bps": 2.1073936593445453,
+    "part_executee_mi_horizon": 0.4132718973757128,
+    "diff_moyen_vs_twap_bps": 0.20983605266732352,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.20688388587855305,
+     0.21273693906820818
+    ],
+    "utilite": {
+     "lam=0.01": 3.2376503682451028,
+     "lam=0.05": 7.758677203847333,
+     "lam=0.3": 36.01509492636127
+    },
+    "ecart_type_marche_bps": 10.623375811843307,
+    "ecart_type_impact_jour_bps": 0.35617938099702023,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 10536.968296722727,
+    "cout_total_eur": 49081198.326134466
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.287669372436617,
+    "ic95_moyen_bps": [
+     2.2413451579013666,
+     2.333795988581714
+    ],
+    "ecart_type_bps": 8.829030663588636,
+    "ic95_ecart_type_bps": [
+     7.76308379255649,
+     10.137489618184635
+    ],
+    "p95_bps": 14.425857821424557,
+    "ic95_p95_bps": [
+     13.259962170027285,
+     15.624556710375126
+    ],
+    "p05_bps": -10.306874719013432,
+    "cout_impact_moyen_bps": 2.287669372436617,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": 0.23134098911528378,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.2258150129729879,
+     0.23684339391372303
+    ],
+    "utilite": {
+     "lam=0.01": 3.0671871970225006,
+     "lam=0.05": 6.185258495366036,
+     "lam=0.3": 25.67320411001313
+    },
+    "ecart_type_marche_bps": 8.800506972162816,
+    "ecart_type_impact_jour_bps": 0.3966772862818174,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 11438.346862183083,
+    "cout_total_eur": 23723131.392167713
+   }
+  },
+  "rac__AC-lam1": {
+   "id": "AC1·rac",
+   "cle": "rac__AC-lam1",
+   "strategie": "AC-lam1",
+   "strategie_libelle": "Almgren-Chriss λ=0,01",
+   "famille": "Almgren-Chriss",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 2.2127850589578237,
+    "std_theorique_bps": 8.509193435835652
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.8953758346944534,
+    "ic95_moyen_bps": [
+     1.873604432637606,
+     1.9167690582735386
+    ],
+    "ecart_type_bps": 8.207443205161866,
+    "ic95_ecart_type_bps": [
+     7.611454373692423,
+     8.929618173319167
+    ],
+    "p95_bps": 13.799844724399822,
+    "ic95_p95_bps": [
+     13.317151203330173,
+     14.44798766079463
+    ],
+    "p05_bps": -10.533000997009912,
+    "cout_impact_moyen_bps": 1.8953758346944534,
+    "part_executee_mi_horizon": 0.6333980370107611,
+    "diff_moyen_vs_twap_bps": -0.0021817719827683657,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.002205769883941744,
+     -0.002157349858957558
+    ],
+    "utilite": {
+     "lam=0.01": 2.5689970743540305,
+     "lam=0.05": 5.263482032992338,
+     "lam=0.3": 22.10401302448176
+    },
+    "ecart_type_marche_bps": 8.199728822334382,
+    "ecart_type_impact_jour_bps": 0.31333955623406134,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 9476.879173472267,
+    "cout_total_eur": 44143303.19003382
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.053968709391266,
+    "ic95_moyen_bps": [
+     2.013216185242519,
+     2.094547401490247
+    ],
+    "ecart_type_bps": 6.689383664032769,
+    "ic95_ecart_type_bps": [
+     6.020292454795952,
+     7.493062618051592
+    ],
+    "p95_bps": 11.780408521553856,
+    "ic95_p95_bps": [
+     11.12310374190375,
+     12.478754125869598
+    ],
+    "p05_bps": -8.07134470719313,
+    "cout_impact_moyen_bps": 2.0539687093912664,
+    "part_executee_mi_horizon": 0.633398037010761,
+    "diff_moyen_vs_twap_bps": -0.0023596739300670855,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.002405193177743903,
+     -0.002313959685859657
+    ],
+    "utilite": {
+     "lam=0.01": 2.5014472474375506,
+     "lam=0.05": 4.291361399622689,
+     "lam=0.3": 15.478324850779806
+    },
+    "ecart_type_marche_bps": 6.662140271435035,
+    "ecart_type_impact_jour_bps": 0.34896653619799567,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 10269.843546956332,
+    "cout_total_eur": 21299655.516387433
+   }
+  },
+  "rac__AC-lam2": {
+   "id": "AC2·rac",
+   "cle": "rac__AC-lam2",
+   "strategie": "AC-lam2",
+   "strategie_libelle": "Almgren-Chriss λ=0,05",
+   "famille": "Almgren-Chriss",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 3.7098422663473327,
+    "std_theorique_bps": 5.696523143737324
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.1732789333520444,
+    "ic95_moyen_bps": [
+     2.14755923996826,
+     2.1985518647649185
+    ],
+    "ecart_type_bps": 5.588891402859907,
+    "ic95_ecart_type_bps": [
+     5.035879862822449,
+     6.374919856682214
+    ],
+    "p95_bps": 10.069204750135984,
+    "ic95_p95_bps": [
+     9.806430567412537,
+     10.478654022895116
+    ],
+    "p05_bps": -6.140692092993229,
+    "cout_impact_moyen_bps": 2.1732789333520444,
+    "part_executee_mi_horizon": 0.8471041629842978,
+    "diff_moyen_vs_twap_bps": 0.27572132667482263,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.27179745747169676,
+     0.27957703660743805
+    ],
+    "utilite": {
+     "lam=0.01": 2.485636004481658,
+     "lam=0.05": 3.735064289000113,
+     "lam=0.3": 11.543991067240455
+    },
+    "ecart_type_marche_bps": 5.575169558692592,
+    "ecart_type_impact_jour_bps": 0.370164369309245,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 10866.394666760221,
+    "cout_total_eur": 50615666.35776911
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.360632972352577,
+    "ic95_moyen_bps": [
+     2.312489888917518,
+     2.408570698915874
+    ],
+    "ecart_type_bps": 4.425282800245813,
+    "ic95_ecart_type_bps": [
+     4.120168343387609,
+     4.788383705710017
+    ],
+    "p95_bps": 9.111722895033738,
+    "ic95_p95_bps": [
+     8.74642867862769,
+     9.818070964348856
+    ],
+    "p05_bps": -5.1273081685660165,
+    "cout_impact_moyen_bps": 2.360632972352577,
+    "part_executee_mi_horizon": 0.8471041629842977,
+    "diff_moyen_vs_twap_bps": 0.3043045890312439,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.2969597439891394,
+     0.3116181042478831
+    ],
+    "utilite": {
+     "lam=0.01": 2.5564642509740914,
+     "lam=0.05": 3.339789365460148,
+     "lam=0.3": 8.235571330998004
+    },
+    "ecart_type_marche_bps": 4.3912289144088605,
+    "ecart_type_impact_jour_bps": 0.412252379923812,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 11803.164861762885,
+    "cout_total_eur": 24479763.923296224
+   }
+  },
+  "rac__AC-lam3": {
+   "id": "AC3·rac",
+   "cle": "rac__AC-lam3",
+   "strategie": "AC-lam3",
+   "strategie_libelle": "Almgren-Chriss λ=0,3",
+   "famille": "Almgren-Chriss",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 8.357367495656725,
+    "std_theorique_bps": 3.5028017962402247
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 3.136722046995338,
+    "ic95_moyen_bps": [
+     3.097314165528004,
+     3.175445396865385
+    ],
+    "ecart_type_bps": 3.605966899249326,
+    "ic95_ecart_type_bps": [
+     3.0489020692455693,
+     4.416426816878937
+    ],
+    "p95_bps": 7.750003386527686,
+    "ic95_p95_bps": [
+     7.5330827595687975,
+     8.036135525807996
+    ],
+    "p05_bps": -2.04091800383975,
+    "cout_impact_moyen_bps": 3.136722046995338,
+    "part_executee_mi_horizon": 0.9892973969393981,
+    "diff_moyen_vs_twap_bps": 1.2391644403181163,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.2215523830314408,
+     1.2564705687079045
+    ],
+    "utilite": {
+     "lam=0.01": 3.266752019780156,
+     "lam=0.05": 3.786871910919428,
+     "lam=0.3": 7.0376212305398775
+    },
+    "ecart_type_marche_bps": 3.558924521782501,
+    "ecart_type_impact_jour_bps": 0.5671682539717344,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 15683.610234976692,
+    "cout_total_eur": 73054256.47452143
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 3.4237871239847193,
+    "ic95_moyen_bps": [
+     3.3500219784532046,
+     3.497237620381809
+    ],
+    "ecart_type_bps": 2.739478927608321,
+    "ic95_ecart_type_bps": [
+     2.5666808539009263,
+     2.908624995990785
+    ],
+    "p95_bps": 7.482425904125923,
+    "ic95_p95_bps": [
+     7.175341414003861,
+     7.8236261703931955
+    ],
+    "p05_bps": -1.3192615150529785,
+    "cout_impact_moyen_bps": 3.423787123984719,
+    "part_executee_mi_horizon": 0.9892973969393978,
+    "diff_moyen_vs_twap_bps": 1.3674587406633862,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.334491833524826,
+     1.400285025713818
+    ],
+    "utilite": {
+     "lam=0.01": 3.4988345719328198,
+     "lam=0.05": 3.7990243637252212,
+     "lam=0.3": 5.67521056242773
+    },
+    "ecart_type_marche_bps": 2.6576313618535092,
+    "ecart_type_impact_jour_bps": 0.6316557775493085,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 17118.9356199236,
+    "cout_total_eur": 35504672.475721546
+   }
+  },
+  "rac__IS-front-loaded": {
+   "id": "IS·rac",
+   "cle": "rac__IS-front-loaded",
+   "strategie": "IS-front-loaded",
+   "strategie_libelle": "IS front-loaded",
+   "famille": "IS",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": {
+    "E_theorique_bps": 2.794578449425438,
+    "std_theorique_bps": 8.010044480477374
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.9905371475868459,
+    "ic95_moyen_bps": [
+     1.967412372375614,
+     2.0132602356552307
+    ],
+    "ecart_type_bps": 7.780601641103313,
+    "ic95_ecart_type_bps": [
+     7.171867031140047,
+     8.50456344076391
+    ],
+    "p95_bps": 13.196581224093228,
+    "ic95_p95_bps": [
+     12.64095784741938,
+     13.957741561466086
+    ],
+    "p05_bps": -9.90041259346733,
+    "cout_impact_moyen_bps": 1.9905371475868459,
+    "part_executee_mi_horizon": 0.6400000000000001,
+    "diff_moyen_vs_twap_bps": 0.09297954090962413,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0916505898790505,
+     0.09428540749775065
+    ],
+    "utilite": {
+     "lam=0.01": 2.5959147665622417,
+     "lam=0.05": 5.017425242463824,
+     "lam=0.3": 20.151865716848715
+    },
+    "ecart_type_marche_bps": 7.771292634986802,
+    "ecart_type_impact_jour_bps": 0.3328176469195626,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 9952.68573793423,
+    "cout_total_eur": 46359610.16729764
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.158988612857239,
+    "ic95_moyen_bps": [
+     2.115702794251282,
+     2.202089793511774
+    ],
+    "ecart_type_bps": 6.291629685487276,
+    "ic95_ecart_type_bps": [
+     5.633740342157008,
+     7.095548904506423
+    ],
+    "p95_bps": 11.155488157985946,
+    "ic95_p95_bps": [
+     10.513228794046428,
+     11.7100044059573
+    ],
+    "p05_bps": -7.331860308565863,
+    "cout_impact_moyen_bps": 2.158988612857239,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 0.10266022953590603,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.10017264932290286,
+     0.105137198843783
+    ],
+    "utilite": {
+     "lam=0.01": 2.5548346538502864,
+     "lam=0.05": 4.138218817822476,
+     "lam=0.3": 14.034369842648657
+    },
+    "ecart_type_marche_bps": 6.262794788356252,
+    "ecart_type_impact_jour_bps": 0.370659302728859,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 10794.943064286195,
+    "cout_total_eur": 22388711.915329568
+   }
+  },
+  "rac__POV-proxy": {
+   "id": "POV·rac",
+   "cle": "rac__POV-proxy",
+   "strategie": "POV-proxy",
+   "strategie_libelle": "POV-proxy",
+   "famille": "POV",
+   "modele": "rac",
+   "modele_libelle": "racine carrée",
+   "facteur_impact": 1.0,
+   "theorie": null,
+   "TRAIN": {
+    "shortfall_moyen_bps": 2.120151202166371,
+    "ic95_moyen_bps": [
+     2.107997840645689,
+     2.132511919631345
+    ],
+    "ecart_type_bps": 8.956193295503708,
+    "ic95_ecart_type_bps": [
+     8.400078307028597,
+     9.578697503934059
+    ],
+    "p95_bps": 15.548033148493696,
+    "ic95_p95_bps": [
+     15.072143851080835,
+     16.195328242048692
+    ],
+    "p05_bps": -11.611569398858412,
+    "cout_impact_moyen_bps": 2.1201512021663715,
+    "part_executee_mi_horizon": 0.5240387463906226,
+    "diff_moyen_vs_twap_bps": 0.22259359548914937,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.21179946320276222,
+     0.2338035875484592
+    ],
+    "utilite": {
+     "lam=0.01": 2.9222851856306264,
+     "lam=0.05": 6.130821119487649,
+     "lam=0.3": 26.184170706094037
+    },
+    "ecart_type_marche_bps": 8.951342299587179,
+    "ecart_type_impact_jour_bps": 0.2031320765872347,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 10600.756010831856,
+    "cout_total_eur": 49378321.49845479
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 2.221093190552803,
+    "ic95_moyen_bps": [
+     2.1974901865832797,
+     2.2472042021733625
+    ],
+    "ecart_type_bps": 7.540567986190428,
+    "ic95_ecart_type_bps": [
+     6.820160431387901,
+     8.406335197187415
+    ],
+    "p95_bps": 13.319420752643596,
+    "ic95_p95_bps": [
+     12.362708972808065,
+     14.291215130910556
+    ],
+    "p05_bps": -9.194800363247158,
+    "cout_impact_moyen_bps": 2.221093190552803,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.16476480723147002,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.1476556586887732,
+     0.1840389966948166
+    ],
+    "utilite": {
+     "lam=0.01": 2.7896948460964026,
+     "lam=0.05": 5.0641014682708025,
+     "lam=0.3": 19.279142856860794
+    },
+    "ecart_type_marche_bps": 7.519183185832171,
+    "ecart_type_impact_jour_bps": 0.23682733577501697,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 11105.465952764016,
+    "cout_total_eur": 23032736.38603257
+   }
+  },
+  "lin_x05__TWAP": {
+   "id": "TWAP·lin×0,5",
+   "cle": "lin_x05__TWAP",
+   "strategie": "TWAP",
+   "strategie_libelle": "TWAP",
+   "famille": "TWAP",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 1.0069761130098043,
+    "std_theorique_bps": 10.403917004126999
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.1454693748341458,
+    "ic95_moyen_bps": [
+     1.119631876920246,
+     1.1721941327844763
+    ],
+    "ecart_type_bps": 9.992054277341783,
+    "ic95_ecart_type_bps": [
+     9.32966120498105,
+     10.757856361882498
+    ],
+    "p95_bps": 15.722951017650217,
+    "ic95_p95_bps": [
+     14.971070516806268,
+     16.6510682638033
+    ],
+    "p05_bps": -13.89256343952955,
+    "cout_impact_moyen_bps": 1.1454693748341458,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 2.1438808616475877,
+     "lam=0.05": 6.137526808901356,
+     "lam=0.3": 31.097813979237408
+    },
+    "ecart_type_marche_bps": 9.982583687296934,
+    "ecart_type_impact_jour_bps": 0.38663422989304735,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 5727.346874170729,
+    "cout_total_eur": 26677981.739887256
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 1.3448305637235007,
+    "ic95_moyen_bps": [
+     1.2935263873013572,
+     1.396397762523285
+    ],
+    "ecart_type_bps": 8.225858062102244,
+    "ic95_ecart_type_bps": [
+     7.2690632512419375,
+     9.397121503533368
+    ],
+    "p95_bps": 12.807106805651104,
+    "ic95_p95_bps": [
+     11.685245092585847,
+     13.962708030594005
+    ],
+    "p05_bps": -10.551511428283987,
+    "cout_impact_moyen_bps": 1.3448305637235007,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 2.0214779723020255,
+     "lam=0.05": 4.728067606616126,
+     "lam=0.3": 21.64425282107925
+    },
+    "ecart_type_marche_bps": 8.1940781374481,
+    "ecart_type_impact_jour_bps": 0.44699030498739817,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 6724.152818617504,
+    "cout_total_eur": 13945892.945812702
+   }
+  },
+  "lin_x05__VWAP-proxy": {
+   "id": "VWAP·lin×0,5",
+   "cle": "lin_x05__VWAP-proxy",
+   "strategie": "VWAP-proxy",
+   "strategie_libelle": "VWAP-proxy",
+   "famille": "VWAP",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 0.9657599156269531,
+    "std_theorique_bps": 11.112477910856319
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.0970028878360347,
+    "ic95_moyen_bps": [
+     1.0725180141606132,
+     1.1223285724127923
+    ],
+    "ecart_type_bps": 10.631700376303016,
+    "ic95_ecart_type_bps": [
+     9.941558367618214,
+     11.39231816238202
+    ],
+    "p95_bps": 16.593769437512414,
+    "ic95_p95_bps": [
+     15.76004267241182,
+     17.604175494017365
+    ],
+    "p05_bps": -14.783809624880208,
+    "cout_impact_moyen_bps": 1.0970028878360345,
+    "part_executee_mi_horizon": 0.4132718973757128,
+    "diff_moyen_vs_twap_bps": -0.04846648699811107,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.04986556037168397,
+     -0.04711386275963296
+    ],
+    "utilite": {
+     "lam=0.01": 2.2273334167508514,
+     "lam=0.05": 6.74865553241012,
+     "lam=0.3": 35.00691875528054
+    },
+    "ecart_type_marche_bps": 10.623375811843307,
+    "ecart_type_impact_jour_bps": 0.3663934607395697,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 5485.014439180174,
+    "cout_total_eur": 25549197.25770125
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 1.285927277573932,
+    "ic95_moyen_bps": [
+     1.2373089367847507,
+     1.3347948712014408
+    ],
+    "ecart_type_bps": 8.830281341825598,
+    "ic95_ecart_type_bps": [
+     7.764576568420518,
+     10.138480651177636
+    ],
+    "p95_bps": 13.423878552674488,
+    "ic95_p95_bps": [
+     12.222549084927381,
+     14.617397911041447
+    ],
+    "p05_bps": -11.29234289254739,
+    "cout_impact_moyen_bps": 1.285927277573932,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": -0.058903286149568634,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.06160289132184424,
+     -0.05621745051660647
+    ],
+    "utilite": {
+     "lam=0.01": 2.065665963331865,
+     "lam=0.05": 5.184620706363597,
+     "lam=0.3": 24.67808785031192
+    },
+    "ecart_type_marche_bps": 8.800506972162816,
+    "ecart_type_impact_jour_bps": 0.42358982236692444,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 6429.636387869661,
+    "cout_total_eur": 13335065.868441677
+   }
+  },
+  "lin_x05__AC-lam1": {
+   "id": "AC1·lin×0,5",
+   "cle": "lin_x05__AC-lam1",
+   "strategie": "AC-lam1",
+   "strategie_libelle": "Almgren-Chriss λ=0,01",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 1.3556408561009956,
+    "std_theorique_bps": 7.367294686122649
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.5558302338039356,
+    "ic95_moyen_bps": [
+     1.518482621648299,
+     1.594460363478576
+    ],
+    "ecart_type_bps": 7.153371778272468,
+    "ic95_ecart_type_bps": [
+     6.592962516972169,
+     7.882366740884076
+    ],
+    "p95_bps": 11.71008951786242,
+    "ic95_p95_bps": [
+     11.270546675157087,
+     12.212204671922644
+    ],
+    "p05_bps": -9.493434696373596,
+    "cout_impact_moyen_bps": 1.5558302338039351,
+    "part_executee_mi_horizon": 0.7174932118938395,
+    "diff_moyen_vs_twap_bps": 0.4103608589697898,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.3988507447280529,
+     0.4222662306940997
+    ],
+    "utilite": {
+     "lam=0.01": 2.067537511785786,
+     "lam=0.05": 4.114366623713186,
+     "lam=0.3": 16.907048573259438
+    },
+    "ecart_type_marche_bps": 7.129912716512829,
+    "ecart_type_impact_jour_bps": 0.558872430769331,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 7779.1511690196785,
+    "cout_total_eur": 36235286.14529366
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 1.8440030431966228,
+    "ic95_moyen_bps": [
+     1.7698438312882676,
+     1.9185424489527372
+    ],
+    "ecart_type_bps": 5.791746854020578,
+    "ic95_ecart_type_bps": [
+     5.300944564773575,
+     6.386125790345355
+    ],
+    "p95_bps": 10.326195076222298,
+    "ic95_p95_bps": [
+     9.662673398700747,
+     10.942301293257579
+    ],
+    "p05_bps": -7.3839665677776924,
+    "cout_impact_moyen_bps": 1.8440030431966228,
+    "part_executee_mi_horizon": 0.7174932118938399,
+    "diff_moyen_vs_twap_bps": 0.49917247947312204,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.47631744398691045,
+     0.5221446864294521
+    ],
+    "utilite": {
+     "lam=0.01": 2.1794463594071956,
+     "lam=0.05": 3.521219624249486,
+     "lam=0.3": 11.9073025295138
+    },
+    "ecart_type_marche_bps": 5.738526704620483,
+    "ecart_type_impact_jour_bps": 0.646115990163974,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 9220.015215983114,
+    "cout_total_eur": 19122311.55794898
+   }
+  },
+  "lin_x05__AC-lam2": {
+   "id": "AC2·lin×0,5",
+   "cle": "lin_x05__AC-lam2",
+   "strategie": "AC-lam2",
+   "strategie_libelle": "Almgren-Chriss λ=0,05",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 2.584980701925221,
+    "std_theorique_bps": 4.65773737878986
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 3.002803250745636,
+    "ic95_moyen_bps": [
+     2.9248536877754163,
+     3.0834296027885117
+    ],
+    "ecart_type_bps": 4.764670847756561,
+    "ic95_ecart_type_bps": [
+     4.230733888848358,
+     5.54967001055119
+    ],
+    "p95_bps": 9.306544775374464,
+    "ic95_p95_bps": [
+     9.034570139126487,
+     9.638396939947986
+    ],
+    "p05_bps": -4.429985334568916,
+    "cout_impact_moyen_bps": 3.002803250745636,
+    "part_executee_mi_horizon": 0.9276662205391027,
+    "diff_moyen_vs_twap_bps": 1.8573338759114901,
+    "ic95_diff_moyen_vs_twap_bps": [
+     1.8052218108551703,
+     1.9112354700040355
+    ],
+    "utilite": {
+     "lam=0.01": 3.229824133620248,
+     "lam=0.05": 4.137907665118697,
+     "lam=0.3": 9.813429736984004
+    },
+    "ecart_type_marche_bps": 4.618152237856659,
+    "ecart_type_impact_jour_bps": 1.1664430259431997,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 15014.01625372818,
+    "cout_total_eur": 69935287.70986585
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 3.6042592275950223,
+    "ic95_moyen_bps": [
+     3.4494788326829537,
+     3.75983313894807
+    ],
+    "ecart_type_bps": 3.821671985232448,
+    "ic95_ecart_type_bps": [
+     3.6104601149268096,
+     4.0591804322289855
+    ],
+    "p95_bps": 9.105313908968919,
+    "ic95_p95_bps": [
+     8.6818602612585,
+     9.476938614921004
+    ],
+    "p05_bps": -3.1324790968532508,
+    "cout_impact_moyen_bps": 3.6042592275950223,
+    "part_executee_mi_horizon": 0.9276662205391025,
+    "diff_moyen_vs_twap_bps": 2.2594286638715215,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.1559524453815966,
+     2.363435376424785
+    ],
+    "utilite": {
+     "lam=0.01": 3.7503109952221276,
+     "lam=0.05": 4.334518065730548,
+     "lam=0.3": 7.9858122564081775
+    },
+    "ecart_type_marche_bps": 3.5632816999231918,
+    "ecart_type_impact_jour_bps": 1.3485322395303787,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 18021.296137975114,
+    "cout_total_eur": 37376168.190160386
+   }
+  },
+  "lin_x05__AC-lam3": {
+   "id": "AC3·lin×0,5",
+   "cle": "lin_x05__AC-lam3",
+   "strategie": "AC-lam3",
+   "strategie_libelle": "Almgren-Chriss λ=0,3",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 5.749042036452387,
+    "std_theorique_bps": 2.945721762856304
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 6.727137742042953,
+    "ic95_moyen_bps": [
+     6.544662830123819,
+     6.9158788449662065
+    ],
+    "ecart_type_bps": 4.0831924276872105,
+    "ic95_ecart_type_bps": [
+     3.640528215298981,
+     4.680813747841576
+    ],
+    "p95_bps": 12.66011953334129,
+    "ic95_p95_bps": [
+     12.113025630793693,
+     13.237066503226767
+    ],
+    "p05_bps": 0.7208886568721896,
+    "cout_impact_moyen_bps": 6.727137742042953,
+    "part_executee_mi_horizon": 0.9983556685224322,
+    "diff_moyen_vs_twap_bps": 5.581668367208808,
+    "ic95_diff_moyen_vs_twap_bps": [
+     5.425030953203573,
+     5.74368471218173
+    ],
+    "utilite": {
+     "lam=0.01": 6.893862346058175,
+     "lam=0.05": 7.560760762119062,
+     "lam=0.3": 11.728875862499605
+    },
+    "ecart_type_marche_bps": 3.0327077041575445,
+    "ecart_type_impact_jour_bps": 2.7305680789896223,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 33635.68871021477,
+    "cout_total_eur": 156675038.0121804
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 8.13510748833593,
+    "ic95_moyen_bps": [
+     7.77277654185995,
+     8.499296005748247
+    ],
+    "ecart_type_bps": 3.865304747943084,
+    "ic95_ecart_type_bps": [
+     3.6775113528723984,
+     4.0488364024580115
+    ],
+    "p95_bps": 14.344874894946253,
+    "ic95_p95_bps": [
+     13.696710885704514,
+     15.136604694496594
+    ],
+    "p05_bps": 1.6237249261735487,
+    "cout_impact_moyen_bps": 8.135107488335928,
+    "part_executee_mi_horizon": 0.9983556685224322,
+    "diff_moyen_vs_twap_bps": 6.790276924612429,
+    "ic95_diff_moyen_vs_twap_bps": [
+     6.479250154558593,
+     7.102898243224962
+    ],
+    "utilite": {
+     "lam=0.01": 8.284513296280643,
+     "lam=0.05": 8.882136528059497,
+     "lam=0.3": 12.617281726677334
+    },
+    "ecart_type_marche_bps": 2.224403909214258,
+    "ecart_type_impact_jour_bps": 3.156827213032991,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 40675.537441679655,
+    "cout_total_eur": 84361064.6540436
+   }
+  },
+  "lin_x05__IS-front-loaded": {
+   "id": "IS·lin×0,5",
+   "cle": "lin_x05__IS-front-loaded",
+   "strategie": "IS-front-loaded",
+   "strategie_libelle": "IS front-loaded",
+   "famille": "IS",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": {
+    "E_theorique_bps": 1.4472892247127191,
+    "std_theorique_bps": 8.010044480477374
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.6637019634073351,
+    "ic95_moyen_bps": [
+     1.6233276981838365,
+     1.7054626814581333
+    ],
+    "ecart_type_bps": 7.796926473286452,
+    "ic95_ecart_type_bps": [
+     7.189751319710472,
+     8.520045248112837
+    ],
+    "p95_bps": 12.757630244576093,
+    "ic95_p95_bps": [
+     12.191075627613358,
+     13.436802641243219
+    ],
+    "p05_bps": -10.398154981638081,
+    "cout_impact_moyen_bps": 1.6637019634073353,
+    "part_executee_mi_horizon": 0.6400000000000001,
+    "diff_moyen_vs_twap_bps": 0.5182325885731893,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.5036958212635905,
+     0.533268548673657
+    ],
+    "utilite": {
+     "lam=0.01": 2.271622587705686,
+     "lam=0.05": 4.703305084899091,
+     "lam=0.3": 19.901320692357867
+    },
+    "ecart_type_marche_bps": 7.771292634986802,
+    "ecart_type_impact_jour_bps": 0.6041634911477763,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 8318.509817036675,
+    "cout_total_eur": 38747618.72775683
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 1.9752283171708978,
+    "ic95_moyen_bps": [
+     1.895059237608961,
+     2.0558084015162685
+    ],
+    "ecart_type_bps": 6.319434733724324,
+    "ic95_ecart_type_bps": [
+     5.665878474864483,
+     7.121467786284611
+    ],
+    "p95_bps": 10.853985510308503,
+    "ic95_p95_bps": [
+     10.219614937441113,
+     11.31154960209881
+    ],
+    "p05_bps": -7.800383090084435,
+    "cout_impact_moyen_bps": 1.9752283171708982,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 0.630397753447397,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.6015328503076038,
+     0.6594106389929832
+    ],
+    "utilite": {
+     "lam=0.01": 2.374580870708912,
+     "lam=0.05": 3.971991084860969,
+     "lam=0.3": 13.955804923311323
+    },
+    "ecart_type_marche_bps": 6.262794788356252,
+    "ecart_type_impact_jour_bps": 0.6984772746197351,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 9876.14158585449,
+    "cout_total_eur": 20483117.649062213
+   }
+  },
+  "lin_x05__POV-proxy": {
+   "id": "POV·lin×0,5",
+   "cle": "lin_x05__POV-proxy",
+   "strategie": "POV-proxy",
+   "strategie_libelle": "POV-proxy",
+   "famille": "POV",
+   "modele": "lin_x05",
+   "modele_libelle": "linéaire ×0,5",
+   "facteur_impact": 0.5,
+   "theorie": null,
+   "TRAIN": {
+    "shortfall_moyen_bps": 1.1974676662334451,
+    "ic95_moyen_bps": [
+     1.1751566413431425,
+     1.2198370330886994
+    ],
+    "ecart_type_bps": 8.960163484127635,
+    "ic95_ecart_type_bps": [
+     8.40465340031002,
+     9.582334883630569
+    ],
+    "p95_bps": 14.627919865684262,
+    "ic95_p95_bps": [
+     14.070329859817365,
+     15.187937531991262
+    ],
+    "p05_bps": -12.60958245073579,
+    "cout_impact_moyen_bps": 1.1974676662334454,
+    "part_executee_mi_horizon": 0.5240387463906226,
+    "diff_moyen_vs_twap_bps": 0.051998291399299346,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.046622179029930225,
+     0.05785716831696914
+    ],
+    "utilite": {
+     "lam=0.01": 2.000312962856388,
+     "lam=0.05": 5.211694149348159,
+     "lam=0.3": 25.282826564921734
+    },
+    "ecart_type_marche_bps": 8.951342299587179,
+    "ecart_type_impact_jour_bps": 0.33522930304869786,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 5987.338331167226,
+    "cout_total_eur": 27889021.946576938
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 1.3752816652891862,
+    "ic95_moyen_bps": [
+     1.3329683346964605,
+     1.4204107297617619
+    ],
+    "ecart_type_bps": 7.5473448681413355,
+    "ic95_ecart_type_bps": [
+     6.8280862809556195,
+     8.413159911934976
+    ],
+    "p95_bps": 12.421531073342006,
+    "ic95_p95_bps": [
+     11.439462789027809,
+     13.26093583652587
+    ],
+    "p05_bps": -10.129746691356791,
+    "cout_impact_moyen_bps": 1.3752816652891862,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.030451101565685423,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.021670329542725388,
+     0.040955715823637114
+    ],
+    "utilite": {
+     "lam=0.01": 1.9449058108757797,
+     "lam=0.05": 4.223402393222154,
+     "lam=0.3": 18.46400603288699
+    },
+    "ecart_type_marche_bps": 7.519183185832171,
+    "ecart_type_impact_jour_bps": 0.3978528507901568,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 6876.408326445931,
+    "cout_total_eur": 14261670.869048862
+   }
+  },
+  "lin_x2__TWAP": {
+   "id": "TWAP·lin×2",
+   "cle": "lin_x2__TWAP",
+   "strategie": "TWAP",
+   "strategie_libelle": "TWAP",
+   "famille": "TWAP",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 3.7279044520392177,
+    "std_theorique_bps": 10.403917004126999
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 4.281877499336583,
+    "ic95_moyen_bps": [
+     4.178527507680983,
+     4.388776531137905
+    ],
+    "ecart_type_bps": 10.103658772216667,
+    "ic95_ecart_type_bps": [
+     9.450456830613838,
+     10.858612525980462
+    ],
+    "p95_bps": 18.170287794643567,
+    "ic95_p95_bps": [
+     17.50012977127642,
+     18.918779412158663
+    ],
+    "p05_bps": -11.724434458793553,
+    "cout_impact_moyen_bps": 4.281877499336583,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 5.302716705190491,
+     "lam=0.05": 9.386073528606126,
+     "lam=0.3": 34.90705367495382
+    },
+    "ecart_type_marche_bps": 9.982583687296934,
+    "ecart_type_impact_jour_bps": 1.5465369195721892,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 21409.38749668292,
+    "cout_total_eur": 99724926.95954904
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 5.079322254894003,
+    "ic95_moyen_bps": [
+     4.874105549205428,
+     5.28559105009314
+    ],
+    "ecart_type_bps": 8.406140111988144,
+    "ic95_ecart_type_bps": [
+     7.472300029263208,
+     9.559238504985302
+    ],
+    "p95_bps": 15.875630100848056,
+    "ic95_p95_bps": [
+     15.016045609949876,
+     16.72120079129173
+    ],
+    "p05_bps": -7.811335460788544,
+    "cout_impact_moyen_bps": 5.079322254894003,
+    "part_executee_mi_horizon": 0.5,
+    "diff_moyen_vs_twap_bps": 0.0,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.0,
+     0.0
+    ],
+    "utilite": {
+     "lam=0.01": 5.785954170717764,
+     "lam=0.05": 8.612481834012804,
+     "lam=0.3": 26.278279729606815
+    },
+    "ecart_type_marche_bps": 8.1940781374481,
+    "ecart_type_impact_jour_bps": 1.7879612199495922,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 25396.61127447002,
+    "cout_total_eur": 52672571.783250816
+   }
+  },
+  "lin_x2__VWAP-proxy": {
+   "id": "VWAP·lin×2",
+   "cle": "lin_x2__VWAP-proxy",
+   "strategie": "VWAP-proxy",
+   "strategie_libelle": "VWAP-proxy",
+   "famille": "VWAP",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 3.5630396625078125,
+    "std_theorique_bps": 11.112477910856319
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 4.088011551344138,
+    "ic95_moyen_bps": [
+     3.9900720566424517,
+     4.189314289651168
+    ],
+    "ecart_type_bps": 10.726003347349797,
+    "ic95_ecart_type_bps": [
+     10.039187401532354,
+     11.484741059008789
+    ],
+    "p95_bps": 18.967031812447033,
+    "ic95_p95_bps": [
+     18.34429852563631,
+     19.627092339793823
+    ],
+    "p05_bps": -12.505488355157265,
+    "cout_impact_moyen_bps": 4.088011551344138,
+    "part_executee_mi_horizon": 0.4132718973757128,
+    "diff_moyen_vs_twap_bps": -0.19386594799244516,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.1994622414867368,
+     -0.18845545103853187
+    ],
+    "utilite": {
+     "lam=0.01": 5.238483029417729,
+     "lam=0.05": 9.840368941712093,
+     "lam=0.3": 38.60215589355186
+    },
+    "ecart_type_marche_bps": 10.623375811843307,
+    "ecart_type_impact_jour_bps": 1.4655738429582787,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 20440.057756720693,
+    "cout_total_eur": 95209789.03080499
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 4.843709110295728,
+    "ic95_moyen_bps": [
+     4.649235747139003,
+     5.039179484805763
+    ],
+    "ecart_type_bps": 8.98145823147346,
+    "ic95_ecart_type_bps": [
+     7.919157823594999,
+     10.273528491058906
+    ],
+    "p95_bps": 16.08789017267489,
+    "ic95_p95_bps": [
+     15.265215761422347,
+     17.36694315384688
+    ],
+    "p05_bps": -8.717212704835626,
+    "cout_impact_moyen_bps": 4.843709110295727,
+    "part_executee_mi_horizon": 0.4132718973757129,
+    "diff_moyen_vs_twap_bps": -0.23561314459827543,
+    "ic95_diff_moyen_vs_twap_bps": [
+     -0.24641156528737693,
+     -0.22486980206642504
+    ],
+    "utilite": {
+     "lam=0.01": 5.650375029932752,
+     "lam=0.05": 8.877038708480846,
+     "lam=0.3": 29.043686699406443
+    },
+    "ecart_type_marche_bps": 8.800506972162816,
+    "ecart_type_impact_jour_bps": 1.6943592894676973,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 24218.54555147864,
+    "cout_total_eur": 50229263.4737667
+   }
+  },
+  "lin_x2__AC-lam1": {
+   "id": "AC1·lin×2",
+   "cle": "lin_x2__AC-lam1",
+   "strategie": "AC-lam1",
+   "strategie_libelle": "Almgren-Chriss λ=0,01",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 3.9734021391334977,
+    "std_theorique_bps": 9.325493883384375
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 4.5707873984203315,
+    "ic95_moyen_bps": [
+     4.459338363374895,
+     4.686063594873737
+    ],
+    "ecart_type_bps": 9.122483431334835,
+    "ic95_ecart_type_bps": [
+     8.505241486087066,
+     9.851811738627351
+    ],
+    "p95_bps": 16.95571280732427,
+    "ic95_p95_bps": [
+     16.399457310865344,
+     17.676775836356065
+    ],
+    "p05_bps": -10.17259458684725,
+    "cout_impact_moyen_bps": 4.5707873984203315,
+    "part_executee_mi_horizon": 0.5751369316052252,
+    "diff_moyen_vs_twap_bps": 0.2889098990837482,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.28081085569391195,
+     0.29728706373583214
+    ],
+    "utilite": {
+     "lam=0.01": 5.402984437970117,
+     "lam=0.05": 8.731772596169261,
+     "lam=0.3": 29.53669858491391
+    },
+    "ecart_type_marche_bps": 8.966873316217132,
+    "ecart_type_impact_jour_bps": 1.6677316039156544,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 22853.93699210166,
+    "cout_total_eur": 106453638.50920953
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 5.430724076548776,
+    "ic95_moyen_bps": [
+     5.209425521437029,
+     5.653157168382344
+    ],
+    "ecart_type_bps": 7.590248635273758,
+    "ic95_ecart_type_bps": [
+     6.826393846552761,
+     8.537717659561912
+    ],
+    "p95_bps": 14.99189871670203,
+    "ic95_p95_bps": [
+     14.6659849695411,
+     15.885587517128949
+    ],
+    "p05_bps": -6.786306892499607,
+    "cout_impact_moyen_bps": 5.430724076548775,
+    "part_executee_mi_horizon": 0.5751369316052252,
+    "diff_moyen_vs_twap_bps": 0.35140182165477274,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.3353199722316017,
+     0.367566118289204
+    ],
+    "utilite": {
+     "lam=0.01": 6.006842820001527,
+     "lam=0.05": 8.311317793812533,
+     "lam=0.3": 22.71428638013132
+    },
+    "ecart_type_marche_bps": 7.322355677603047,
+    "ecart_type_impact_jour_bps": 1.92807516933406,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 27153.620382743877,
+    "cout_total_eur": 56316608.6738108
+   }
+  },
+  "lin_x2__AC-lam2": {
+   "id": "AC2·lin×2",
+   "cle": "lin_x2__AC-lam2",
+   "strategie": "AC-lam2",
+   "strategie_libelle": "Almgren-Chriss λ=0,05",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 5.521950221942176,
+    "std_theorique_bps": 6.9557239587849065
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 6.3934025016280955,
+    "ic95_moyen_bps": [
+     6.2308231373915435,
+     6.561564843485626
+    ],
+    "ecart_type_bps": 7.1723970807151805,
+    "ic95_ecart_type_bps": [
+     6.643385571915727,
+     7.87366827569284
+    ],
+    "p95_bps": 16.02205043926933,
+    "ic95_p95_bps": [
+     15.702607681012061,
+     16.391712285818617
+    ],
+    "p05_bps": -5.289550379522783,
+    "cout_impact_moyen_bps": 6.3934025016280955,
+    "part_executee_mi_horizon": 0.7486878286173823,
+    "diff_moyen_vs_twap_bps": 2.111525002291512,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.0522956297105597,
+     2.1727883123477207
+    ],
+    "utilite": {
+     "lam=0.01": 6.907835300462612,
+     "lam=0.05": 8.965566495800678,
+     "lam=0.3": 21.82638646666359
+    },
+    "ecart_type_marche_bps": 6.7455478368443496,
+    "ecart_type_impact_jour_bps": 2.432849631863319,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 31967.01250814048,
+    "cout_total_eur": 148902344.26291835
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 7.647858929687941,
+    "ic95_moyen_bps": [
+     7.325033537957387,
+     7.972339358259879
+    ],
+    "ecart_type_bps": 6.108831465596612,
+    "ic95_ecart_type_bps": [
+     5.702626762880291,
+     6.606771759580804
+    ],
+    "p95_bps": 16.00933592027547,
+    "ic95_p95_bps": [
+     15.70194928866156,
+     16.47166344392154
+    ],
+    "p05_bps": -3.3728894178469635,
+    "cout_impact_moyen_bps": 7.647858929687941,
+    "part_executee_mi_horizon": 0.7486878286173826,
+    "diff_moyen_vs_twap_bps": 2.568536674793938,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.4509279887519595,
+     2.68674830816674
+    ],
+    "utilite": {
+     "lam=0.01": 8.021037148438573,
+     "lam=0.05": 9.513750023441103,
+     "lam=0.3": 18.843205492206916
+    },
+    "ecart_type_marche_bps": 5.4058668939927355,
+    "ecart_type_impact_jour_bps": 2.812633012953569,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 38239.29464843971,
+    "cout_total_eur": 79308297.10086396
+   }
+  },
+  "lin_x2__AC-lam3": {
+   "id": "AC3·lin×2",
+   "cle": "lin_x2__AC-lam3",
+   "strategie": "AC-lam3",
+   "strategie_libelle": "Almgren-Chriss λ=0,3",
+   "famille": "Almgren-Chriss",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 12.104468960788468,
+    "std_theorique_bps": 4.175784215696155
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 14.141294895612344,
+    "ic95_moyen_bps": [
+     13.761301781516027,
+     14.534336978512835
+    ],
+    "ecart_type_bps": 7.056927711964837,
+    "ic95_ecart_type_bps": [
+     6.536187839174851,
+     7.61754676726429
+    ],
+    "p95_bps": 25.220470411687412,
+    "ic95_p95_bps": [
+     23.999820122233675,
+     26.95779737693937
+    ],
+    "p05_bps": 3.689215625182892,
+    "cout_impact_moyen_bps": 14.141294895612344,
+    "part_executee_mi_horizon": 0.9597001482895394,
+    "diff_moyen_vs_twap_bps": 9.85941739627576,
+    "ic95_diff_moyen_vs_twap_bps": [
+     9.582774273835042,
+     10.14556044737493
+    ],
+    "utilite": {
+     "lam=0.01": 14.639297182931317,
+     "lam=0.05": 16.63130633220721,
+     "lam=0.3": 29.081363515181526
+    },
+    "ecart_type_marche_bps": 4.17685503760812,
+    "ecart_type_impact_jour_bps": 5.686245066100314,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 70706.47447806173,
+    "cout_total_eur": 329350758.11881155
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 17.073307865616506,
+    "ic95_moyen_bps": [
+     16.318775293238076,
+     17.831708718611342
+    ],
+    "ecart_type_bps": 7.310483063881941,
+    "ic95_ecart_type_bps": [
+     6.93095803758482,
+     7.700753824076897
+    ],
+    "p95_bps": 29.37297310920796,
+    "ic95_p95_bps": [
+     27.946554838466636,
+     30.88796982040173
+    ],
+    "p05_bps": 5.328508491459591,
+    "cout_impact_moyen_bps": 17.073307865616506,
+    "part_executee_mi_horizon": 0.9597001482895391,
+    "diff_moyen_vs_twap_bps": 11.993985610722504,
+    "ic95_diff_moyen_vs_twap_bps": [
+     11.444669744032648,
+     12.546117668518201
+    ],
+    "utilite": {
+     "lam=0.01": 17.607739491889554,
+     "lam=0.05": 19.745465996981743,
+     "lam=0.3": 33.10625665380792
+    },
+    "ecart_type_marche_bps": 3.183831530992167,
+    "ecart_type_impact_jour_bps": 6.573904273898264,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 85366.53932808252,
+    "cout_total_eur": 177050202.56644315
+   }
+  },
+  "lin_x2__IS-front-loaded": {
+   "id": "IS·lin×2",
+   "cle": "lin_x2__IS-front-loaded",
+   "strategie": "IS-front-loaded",
+   "strategie_libelle": "IS front-loaded",
+   "famille": "IS",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": {
+    "E_theorique_bps": 5.489156898850876,
+    "std_theorique_bps": 8.010044480477374
+   },
+   "TRAIN": {
+    "shortfall_moyen_bps": 6.3548078536293415,
+    "ic95_moyen_bps": [
+     6.193310792735345,
+     6.521850725832534
+    ],
+    "ecart_type_bps": 8.140543039840358,
+    "ic95_ecart_type_bps": [
+     7.561268712459037,
+     8.84453277313612
+    ],
+    "p95_bps": 17.243532977987588,
+    "ic95_p95_bps": [
+     16.76477124441145,
+     17.572550907693913
+    ],
+    "p05_bps": -7.060776060081487,
+    "cout_impact_moyen_bps": 6.3548078536293415,
+    "part_executee_mi_horizon": 0.6400000000000001,
+    "diff_moyen_vs_twap_bps": 2.072930354292758,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.014783285054362,
+     2.133074194694629
+    ],
+    "utilite": {
+     "lam=0.01": 7.017492263464274,
+     "lam=0.05": 9.668229902804006,
+     "lam=0.3": 26.23534014867733
+    },
+    "ecart_type_marche_bps": 7.771292634986802,
+    "ecart_type_impact_jour_bps": 2.4166539645911054,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 31774.039268146706,
+    "cout_total_eur": 148003474.91102734
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 7.600913268683593,
+    "ic95_moyen_bps": [
+     7.280236950435844,
+     7.9232336060650725
+    ],
+    "ecart_type_bps": 6.874361285130917,
+    "ic95_ecart_type_bps": [
+     6.270195786978364,
+     7.634287522908615
+    ],
+    "p95_bps": 16.452781136725118,
+    "ic95_p95_bps": [
+     16.100757041789752,
+     16.97018662030022
+    ],
+    "p05_bps": -4.050666875815315,
+    "cout_impact_moyen_bps": 7.600913268683592,
+    "part_executee_mi_horizon": 0.6400000000000002,
+    "diff_moyen_vs_twap_bps": 2.52159101378959,
+    "ic95_diff_moyen_vs_twap_bps": [
+     2.406131401230416,
+     2.637642555971932
+    ],
+    "utilite": {
+     "lam=0.01": 8.073481699468662,
+     "lam=0.05": 9.963755422608934,
+     "lam=0.3": 21.77796619223563
+    },
+    "ecart_type_marche_bps": 6.262794788356252,
+    "ecart_type_impact_jour_bps": 2.7939090984789403,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 38004.566343417966,
+    "cout_total_eur": 78821470.59624887
+   }
+  },
+  "lin_x2__POV-proxy": {
+   "id": "POV·lin×2",
+   "cle": "lin_x2__POV-proxy",
+   "strategie": "POV-proxy",
+   "strategie_libelle": "POV-proxy",
+   "famille": "POV",
+   "modele": "lin_x2",
+   "modele_libelle": "linéaire ×2",
+   "facteur_impact": 2.0,
+   "theorie": null,
+   "TRAIN": {
+    "shortfall_moyen_bps": 4.489870664933781,
+    "ic95_moyen_bps": [
+     4.40062656537257,
+     4.579348132354798
+    ],
+    "ecart_type_bps": 9.053760098082154,
+    "ic95_ecart_type_bps": [
+     8.508092779930097,
+     9.660118042847175
+    ],
+    "p95_bps": 17.453875708980398,
+    "ic95_p95_bps": [
+     16.95826130780559,
+     18.008636831380656
+    ],
+    "p05_bps": -9.92448709307625,
+    "cout_impact_moyen_bps": 4.489870664933781,
+    "part_executee_mi_horizon": 0.5240387463906226,
+    "diff_moyen_vs_twap_bps": 0.20799316559719738,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.1864887161197209,
+     0.23142867326787567
+    ],
+    "utilite": {
+     "lam=0.01": 5.309576384070026,
+     "lam=0.05": 8.58839926061501,
+     "lam=0.3": 29.08104223902115
+    },
+    "ecart_type_marche_bps": 8.951342299587179,
+    "ecart_type_impact_jour_bps": 1.3409172121947914,
+    "n_jours": 2329,
+    "n_ordres": 4658,
+    "cout_par_ordre_eur": 22449.353324668908,
+    "cout_total_eur": 104569087.78630777
+   },
+   "VAL": {
+    "shortfall_moyen_bps": 5.201126661156744,
+    "ic95_moyen_bps": [
+     5.03187333878584,
+     5.381642919047047
+    ],
+    "ecart_type_bps": 7.70310737744323,
+    "ic95_ecart_type_bps": [
+     7.008195161702878,
+     8.559303260485189
+    ],
+    "p95_bps": 15.658740169753871,
+    "ic95_p95_bps": [
+     14.900531736922844,
+     16.341921009151317
+    ],
+    "p05_bps": -7.10802940894333,
+    "cout_impact_moyen_bps": 5.201126661156744,
+    "part_executee_mi_horizon": 0.5193245250812325,
+    "diff_moyen_vs_twap_bps": 0.1218044062627408,
+    "ic95_diff_moyen_vs_twap_bps": [
+     0.08668131817089893,
+     0.16382286329454757
+    ],
+    "utilite": {
+     "lam=0.01": 5.794505293840947,
+     "lam=0.05": 8.16801982457776,
+     "lam=0.3": 23.00248564168284
+    },
+    "ecart_type_marche_bps": 7.519183185832171,
+    "ecart_type_impact_jour_bps": 1.5914114031606272,
+    "n_jours": 1037,
+    "n_ordres": 2074,
+    "cout_par_ordre_eur": 26005.633305783722,
+    "cout_total_eur": 53935683.47619544
+   }
+  }
+ }
+}
