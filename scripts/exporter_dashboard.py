@@ -6,8 +6,9 @@ Lit UNIQUEMENT des fichiers de results/ (aucune donnée de marché requise, donc
 Écrit docs/data.json, docs/data.js (même contenu, pour l'ouverture en file://), docs/index.html (copie du gabarit
 s'il est présent à côté du dépôt, sinon on garde celui de docs/) et docs/.nojekyll.
 
-Ici la « performance » est un COÛT : le rendement d'un jour vaut -(coût du jour)/10 000, donc la courbe « capital »
-du gabarit (base 100, composée) est un coût cumulé qui DESCEND, d'autant plus vite que l'exécution est chère.
+Ici la série est un COÛT : le « rendement » d'un jour vaut -(coût du jour)/10 000 (convention de stockage du gabarit) et
+la page, en mode "cout" (data.mode), l'affiche en bps : coût moyen, écart-type, p95, coût cumulé (bps et EUR), voyant
+« Robuste ? » (le classement des variantes est-il le même en TRAIN et en VAL ?). Ni Sharpe ni voyant « Overfit ? ».
 Le TRAIN est IN-SAMPLE (le profil d'activité et les paramètres d'Almgren-Chriss y sont calibrés) ; l'impact, lui,
 est supposé, jamais estimé. La « sélection » par les filtres n'utilise que des statistiques TRAIN.
 
@@ -46,10 +47,8 @@ def texte_frais(p: dict, meta: dict) -> str:
         "L'impact est SUPPOSÉ, jamais estimé sur des fills",
         f"TRAIN {meta['periodes']['TRAIN'][0][:4]}-{meta['periodes']['TRAIN'][1][:4]} (profil d'activité et paramètres d'Almgren-Chriss calibrés ici : "
         f"le rejeu TRAIN est in-sample), VAL {meta['periodes']['VAL'][0][:4]}-{meta['periodes']['VAL'][1][:4]} hors échantillon, TEST 2023+ scellé",
-        "Lecture : le « rendement » d'un jour est −(coût du jour), moyenne du shortfall de l'achat et de la vente ; la courbe « capital » (base 100) est donc un coût "
-        "cumulé qui descend (100 − courbe ≈ somme des shortfalls, 1 bp = 0,01 point). Sharpe, rendement et volatilité du gabarit mesurent ce coût et sa régularité, "
-        "pas une performance : le voyant « Overfit ? » est rouge par construction (un coût est toujours négatif), ne pas le lire. "
-        "Ce qui compte : le nuage « Sharpe TRAIN contre VAL » (sur la diagonale = coût stable hors échantillon) et la comparaison des courbes. "
+        "Lecture : le coût du jour est la moyenne du shortfall de l'achat et de la vente, en bps du notionnel d'un ordre ; la courbe est le coût cumulé "
+        "(1 bp = 0,01 % du notionnel) et le voyant « Robuste ? » dit si le classement des variantes retenues est le même en TRAIN et en VAL. "
         "Le risque de prix (écart-type du shortfall d'un seul ordre) est dans les filtres, pas dans les courbes (achat et vente moyennés)",
     ]
     return ". ".join(m[0].upper() + m[1:] for m in morceaux) + "."
@@ -87,9 +86,12 @@ def main() -> None:
         {"cle": "ecart_type_train_bps", "libelle": "Écart-type TRAIN max (bps, risque de prix d'un ordre)", "type": "max", "pas": 0.1},
     ]
     data = {
+        "mode": "cout",
+        "notionnel_eur": v["parametres"]["notionnel_eur"],
+        "ordres_par_jour": 2,                                  # un achat et une vente par jour
         "titre": "Projet 03 : coût d'exécution de 50 M EUR d'EURUSD, 28 variantes",
         "sous_titre": "7 stratégies × 4 modèles d'impact. Filtrer sur le coût et le risque TRAIN (in-sample), moyenner les variantes retenues, "
-                      "lire le coût cumulé sur TRAIN puis VAL (hors échantillon). La courbe descend : plus elle descend vite, plus l'exécution coûte.",
+                      "lire le coût cumulé sur TRAIN puis VAL (hors échantillon). La courbe monte (coût cumulé en bps) : plus elle monte vite, plus l'exécution coûte.",
         "frais": texte_frais(v["parametres"], v["meta"]),
         "frontieres": {"train_fin": FIN_TRAIN, "val_fin": FIN_VAL},
         "dates": dates,

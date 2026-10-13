@@ -61,6 +61,7 @@ def test_donnees_du_tableau_de_bord_coherentes_et_sans_test():
     d, v = _json(DOCS / "data.json"), _json(RESULTATS / "variantes_train_val.json")
     csv = pd.read_csv(RESULTATS / "couts_quotidiens.csv", index_col=0)
     assert d["frontieres"] == {"train_fin": "2018-12-31", "val_fin": "2022-12-31"}
+    assert d["mode"] == "cout" and d["notionnel_eur"] == v["parametres"]["notionnel_eur"] and d["ordres_par_jour"] == 2  # page en mode coût
     assert pd.Timestamp(d["dates"][-1]) < pd.Timestamp("2023-01-01"), "le TEST ne doit jamais apparaître"
     assert d["dates"] == list(csv.index)
     assert len(d["variantes"]) == len(v["variantes"]) + 1 and sum(1 for x in d["variantes"] if x.get("reference")) == 1  # + la référence TWAP

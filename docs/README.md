@@ -3,7 +3,7 @@
 Page statique qui permet de choisir les conditions de départ (modèle d'impact, famille de stratégie, coût moyen TRAIN maximal, écart-type TRAIN maximal), de combiner les variantes retenues et de lire le **coût cumulé d'exécution** sur TRAIN (in-sample) puis VAL (hors échantillon), avec ses métriques recalculées dans le navigateur.
 La sélection n'utilise que TRAIN ; le TEST n'apparaît jamais. Pas de serveur nécessaire : ouvrir `index.html` (les données sont dans `data.js`) ou publier le dossier avec GitHub Pages.
 
-Ici la « performance » est un coût : le rendement d'un jour vaut −(coût du jour). La courbe « capital » (base 100) est donc un coût cumulé qui descend ; le Sharpe, le rendement et le voyant « Overfit ? » du gabarit ne sont pas des performances (voir le README principal, section « Tableau de bord interactif »).
+La page est en mode « coût » (`"mode": "cout"` dans `data.json`) : tout est en bps du notionnel, la courbe est le coût cumulé, et le voyant « Robuste ? » compare le classement des variantes retenues entre TRAIN et VAL (voir le README principal, section « Tableau de bord interactif »).
 
 | Fichier | Rôle |
 |---|---|
