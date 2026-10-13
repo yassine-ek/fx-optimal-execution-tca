@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import sys
 import zipfile
 from functools import lru_cache
 from pathlib import Path
@@ -23,6 +24,25 @@ import pandas as pd
 ANNEES_TRAIN = tuple(range(2010, 2019))  # calibration des profils et des paramètres
 ANNEES_VAL = tuple(range(2019, 2023))    # évaluation
 ANNEE_TEST_DEBUT = 2023                  # scellé : jamais lu ici
+
+AIDE_DONNEES = (
+    "Minutes EURUSD HistData introuvables. Elles ne sont pas redistribuées avec le dépôt : télécharger soi-même, sur "
+    "https://www.histdata.com (EURUSD, barres 1 minute, format MetaTrader), un zip par année de 2010 à 2022, puis les ranger ainsi :\n"
+    "    <HISTDATA_DIR>/histdata_raw/EURUSD/EURUSD_AAAA.zip     (chaque zip contient DAT_MT_EURUSD_M1_AAAA.csv)\n"
+    "et définir la variable d'environnement HISTDATA_DIR (défaut essayé : ./data/histdata/). Voir le README, section « Obtenir les données »."
+)
+
+
+class DonneesIntrouvables(FileNotFoundError):
+    """Minutes HistData absentes : le message dit où les obtenir, où les ranger et quelle variable définir."""
+
+
+def executer_avec_message_clair(main) -> None:
+    """Lance `main()` ; si les données manquent, affiche le message guidé (sans trace brute) et sort avec le code 1."""
+    try:
+        main()
+    except DonneesIntrouvables as e:
+        sys.exit(f"Erreur : {e}")
 
 
 def _candidats() -> list[Path]:
@@ -44,8 +64,7 @@ def _dossier_donnees() -> Path:
     for cand in _candidats():
         if cand.is_dir():
             return cand
-    raise FileNotFoundError("Minutes EURUSD HistData introuvables : définir HISTDATA_DIR (racine qui contient "
-                            "histdata_raw/EURUSD/EURUSD_AAAA.zip), voir le README, section « Reproduire ».")
+    raise DonneesIntrouvables(AIDE_DONNEES)
 
 
 def donnees_disponibles(annees: tuple[int, ...] = (2018, 2019)) -> bool:
@@ -66,6 +85,8 @@ def charger_annee(annee: int) -> tuple[np.ndarray, np.ndarray]:
     """Retourne (dates[n_jours] datetime64[D], close[n_jours, 1440]) à l'heure locale de New York (voir l'en-tête), NaN si minute absente."""
     _refuser_test(annee)
     chemin = _dossier_donnees() / f"EURUSD_{annee}.zip"
+    if not chemin.is_file():
+        raise DonneesIntrouvables(f"{chemin.name} manque dans {chemin.parent}.\n{AIDE_DONNEES}")
     with zipfile.ZipFile(chemin) as z:
         nom = f"DAT_MT_EURUSD_M1_{annee}.csv"
         with z.open(nom) as f:

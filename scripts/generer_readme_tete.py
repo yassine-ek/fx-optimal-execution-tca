@@ -1,9 +1,15 @@
 """Écrit dans README.md les blocs de chiffres, LUS dans results/*.json (jamais tapés à la main).
 
-Cinq blocs délimités par des balises HTML (invisibles sur GitHub) sont réécrits à chaque exécution :
-  <!-- AUTO:TETE -->       encadré frais, tableaux de métriques TRAIN | VAL par stratégie (impact linéaire, racine carrée)
-  <!-- AUTO:ROBUSTE -->    « Robuste ou pas ? » : théorie calibrée sur TRAIN contre réalisé TRAIN et VAL
-  <!-- AUTO:VARIANTES -->  tableau des 28 variantes (7 stratégies x 4 modèles d'impact)
+Des blocs délimités par des balises HTML (invisibles sur GitHub) sont réécrits à chaque exécution, dans deux fichiers :
+README.md
+  <!-- AUTO:CLES -->       les 3 « résultats clés », chaque chiffre avec sa réserve
+  <!-- AUTO:FRAIS -->      encadré frais et hypothèses (8 lignes)
+  <!-- AUTO:TETE -->       tableau de métriques TRAIN | VAL par stratégie (impact linéaire, 7 colonnes)
+  <!-- AUTO:TABLES -->     tableaux complets (9 colonnes, impacts linéaire et racine carrée), repliés dans <details>
+  <!-- AUTO:ROBUSTE -->    « Overfit ou pas ? » : théorie calibrée sur TRAIN contre réalisé TRAIN et VAL
+  <!-- AUTO:VARIANTES -->  tableau des 28 variantes (7 stratégies x 4 modèles d'impact), replié dans <details>
+docs/details.md
+  <!-- AUTO:FRAIS_DETAIL --> encadré détaillé des hypothèses
   <!-- AUTO:LECTURE -->    lecture chiffrée des résultats VAL (frontière, VWAP, IS, risque de modèle)
   <!-- AUTO:SOR -->        agrégateur de liquidité : prix effectif, rejets, délai par routeur
 Aucune donnée de marché requise, TEST jamais chargé. Sources : results/variantes_train_val.json et results/verdict_execution.json.
@@ -18,7 +24,11 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parents[1]
 RESULTATS = RACINE / "results"
-README = RACINE / "README.md"
+# fichier cible -> blocs AUTO qu'il contient (le test de fraîcheur relit exactement cette table)
+DESTINATIONS = {
+    "README.md": ("CLES", "FRAIS", "TETE", "TABLES", "ROBUSTE", "VARIANTES"),
+    "docs/details.md": ("FRAIS_DETAIL", "LECTURE", "SOR"),
+}
 MODELES = ("lin", "rac")  # modèles détaillés en tête ; les sensibilités sont dans le tableau des variantes
 NOMS_ROUTEURS = {"a_meilleur_affiche": "(a) meilleur prix affiché", "b_prix_effectif": "(b) prix effectif", "c_split": "(c) split 3 LP"}
 
@@ -63,22 +73,89 @@ def lib(v, strat):
     return v["strategies"][strat]["libelle"]
 
 
-# ------------------------------------------------------------------ bloc TÊTE
+# ------------------------------------------------------------------ bloc CLES
+def reconstruction_proxy_volume(v, periode: str) -> dict:
+    """Coût TWAP (impact linéaire) RECONSTRUIT à partir de la seule théorie et du facteur d'activité : preuve que l'écart théorie / réalisé vient du proxy de volume.
+
+    Réalisé = impact temporaire théorique x E[1/m] + (demi-spread + impact permanent), où m est l'activité de prix du jour (le « volume » simulé).
+    Pour un TWAP le permanent vaut gamma x (N-1)/(2N) et ne dépend pas de m ; l'égalité est exacte, pas un ajustement.
+    """
+    p = v["parametres"]
+    N, fixe_spread = p["horizon_min"], p["demi_spread_bps"]
+    permanent = p["gamma_bps"] * (N - 1) / (2 * N)
+    theorie = var(v, "lin", "TWAP")["theorie"]["E_theorique_bps"]
+    temporaire = theorie - fixe_spread - permanent
+    inv_m = v["regime"][periode]["inverse_m_moyen"]
+    return {"temporaire": temporaire, "inverse_m": inv_m, "fixe": fixe_spread + permanent, "reconstruit": temporaire * inv_m + fixe_spread + permanent,
+            "realise": var(v, "lin", "TWAP")[periode]["shortfall_moyen_bps"], "theorie": theorie}
+
+
+def ecarts_sor(o) -> tuple[list[float], list[float]]:
+    """(écart prix obtenu - meilleur prix affiché en pips, part d'ordres avec rejet) du routeur (a), un par niveau de toxicité."""
+    res = o["agregation"]["resultats"]
+    a = [res[t]["a_meilleur_affiche"] for t in res]
+    return [x["prix_effectif_pips"]["moyenne"] - x["meilleur_affiche_pips"] for x in a], [x["ordres_avec_rejet"] for x in a]
+
+
+def bloc_cles(v, o) -> str:
+    tw, ac2 = var(v, "lin", "TWAP")["VAL"], var(v, "lin", "AC-lam2")["VAL"]
+    rob = v["robustesse"]
+    rec = reconstruction_proxy_volume(v, "VAL")
+    ecarts, taux = ecarts_sor(o)
+    return "\n".join([
+        f"- **Frontière coût / risque retrouvée sur {entier(v['meta']['jours_utilises']['VAL'])} jours hors échantillon (VAL 2019-2022).** TWAP : {n(tw['shortfall_moyen_bps'])} bps, écart-type {n(tw['ecart_type_bps'])} ; "
+        f"Almgren-Chriss λ=0,05 : {n(ac2['shortfall_moyen_bps'])} bps, écart-type {n(ac2['ecart_type_bps'])}, soit un risque de prix divisé par {n(tw['ecart_type_bps'] / ac2['ecart_type_bps'], 1)} "
+        f"pour un coût multiplié par {n(ac2['shortfall_moyen_bps'] / tw['shortfall_moyen_bps'], 1)}. "
+        f"*Réserve : l'impact (η) et la taille du pool de liquidité sont des hypothèses, donc ces niveaux en bps sont **indicatifs** ; seuls le classement des stratégies "
+        f"(corrélation de rang TRAIN → VAL : {n(rob['lin']['spearman_cout_moyen_train_val'])} en impact linéaire, {n(rob['rac']['spearman_cout_moyen_train_val'])} en racine carrée) "
+        "et la forme de la frontière sont robustes. Pour situer : en pratique, un ordre de 50 M EUR coûte de l'ordre de quelques dixièmes de bp à quelques bps selon l'heure "
+        "(ordre de grandeur qualitatif, non estimé ici).*",
+        f"- **Le coût réalisé dépasse la théorie de {pct(rec['realise'] / rec['theorie'] - 1)} en VAL, et c'est le proxy de volume qui l'explique.** Le FX n'a pas de volume centralisé : le « volume » simulé suit l'activité de prix du jour m, "
+        f"l'impact varie en 1/m et la moyenne de 1/m dépasse 1/(moyenne de m) (E[1/m] = {n(rec['inverse_m'])} en VAL). Le coût TWAP réalisé se reconstruit à partir de la théorie : "
+        f"{n(rec['temporaire'], 3)} × {n(rec['inverse_m'], 3)} + {n(rec['fixe'], 3)} = {n(rec['reconstruit'], 3)} bps contre {n(rec['realise'], 3)} mesurés. "
+        "*Réserve : c'est une propriété du modèle de volume, pas une observation de marché.*",
+        f"- **Agrégateur de 8 fournisseurs de liquidité FICTIFS avec last look : le prix obtenu est plus cher que le meilleur prix affiché de {n(min(ecarts), 2)} à {n(max(ecarts), 2)} pip, "
+        f"et {pct(min(taux))} à {pct(max(taux))} des ordres subissent au moins un rejet.** "
+        "*Réserve : les paramètres des 8 LP sont inventés, l'écart est donc un paramètre d'entrée et non un résultat ; seule la mécanique (cote périmée + last look, "
+        "écart croissant avec la toxicité du flux) est démontrée.*",
+    ])
+
+
+# ------------------------------------------------------------------ blocs FRAIS (8 lignes) et FRAIS_DETAIL
+def bloc_frais(v) -> str:
+    p, m = v["parametres"], v["meta"]
+    pr, ju = m["periodes"], m["jours_utilises"]
+    return "\n".join([
+        "| Hypothèse | Valeur |",
+        "|---|---|",
+        f"| Ordre | {p['notionnel_eur'] / 1e6:.0f} M EUR d'EURUSD, **un achat ET une vente rejoués chaque jour**, {p['horizon_min']} tranches d'une minute, "
+        f"fenêtre {p['debut_heure_ny']}h-{p['debut_heure_ny'] + 1}h New York, prix d'arrivée = clôture de 7h59, la tranche k ne voit que le passé |",
+        f"| Impact **supposé** | temporaire linéaire η = {n(p['eta_bps'], 0)} bps à 100 % de participation (modèle principal) ; racine carrée **appliquée par tranche d'une minute** "
+        f"(impact transitoire à décroissance complète, pas la loi de l'ordre parent), y = {n(p['y_racine'], 3)}, calibrée sur le linéaire ; permanent {n(p['gamma_bps'], 1)} bp ; "
+        "sensibilités ×0,5 et ×2. **Aucun fill réel : niveaux absolus indicatifs** |",
+        f"| Liquidité **supposée** | pool accessible de {p['volume_jour_eur'] / 1e9:.0f} Md EUR par jour (le marché fait environ 1 000 Md), participation TWAP nominale {pct(p['participation_twap_nominale'], 1)} ; "
+        "volume d'une minute = pool × profil × activité de prix du jour (**proxy** : la colonne volume vaut 0) |",
+        f"| Coûts | demi-spread {n(p['demi_spread_bps'], 1)} bp constant (supposé, barres BID) + impact ci-dessus ; agrégateur : **8 fournisseurs fictifs** avec rejets simulés |",
+        f"| Données et découpage | HistData EURUSD 1 min, prix BID, heure de New York · **TRAIN** {pr['TRAIN'][0][:4]}-{pr['TRAIN'][1][:4]} (profil et paramètres Almgren-Chriss calibrés ici : in-sample) · "
+        f"**VAL** {pr['VAL'][0][:4]}-{pr['VAL'][1][:4]} ({entier(ju['VAL'])} jours, hors échantillon) · **TEST 2023+ scellé** |",
+        f"| Statistiques | shortfall en bps du notionnel (positif = on paie), achat et vente moyennés, IC95 par bootstrap en blocs de 5 jours ; {len(v['variantes'])} variantes toutes publiées, aucune choisie sur VAL (pas de DSR) |",
+    ])
+
+
 def encadre_frais(v) -> str:
     p, m = v["parametres"], v["meta"]
     pr = m["periodes"]
     ju, jo = m["jours_utilises"], m["jours_ouvres"]
     return "\n".join([
-        "### Frais et hypothèses",
-        "",
         "| Hypothèse | Valeur |",
         "|---|---|",
         f"| Ordre | {p['notionnel_eur'] / 1e6:.0f} M EUR d'EURUSD, **un achat ET une vente rejoués chaque jour**, {p['horizon_min']} tranches d'une minute, "
         f"fenêtre {p['debut_heure_ny']}h00-{p['debut_heure_ny'] + 1}h00 heure de New York (les annonces US de 8h30 y sont), prix d'arrivée = clôture de 7h59 |",
         f"| Demi-spread | {n(p['demi_spread_bps'], 1)} bp du notionnel, constant et identique pour toutes les stratégies (**hypothèse** : les barres BID ne contiennent pas de spread réel) |",
         f"| Impact supposé | temporaire **linéaire** : {n(p['eta_bps'], 0)} bps × participation (modèle principal) ; **racine carrée** : y·σ·√participation avec y = {n(p['y_racine'], 3)}, "
-        f"calibré pour égaler le linéaire au TWAP nominal ; permanent linéaire : {n(p['gamma_bps'], 1)} bp pour l'ordre complet. Sensibilités : impact ×0,5 et ×2. "
-        "**Aucun impact n'est estimé sur des fills** |",
+        f"calibré pour égaler le linéaire au TWAP nominal, **appliqué tranche par tranche (une minute)** : c'est un impact transitoire à décroissance complète, pas la loi de l'ordre parent "
+        f"(voir « Loi racine carrée » plus bas) ; permanent linéaire : {n(p['gamma_bps'], 1)} bp pour l'ordre complet. Sensibilités : impact ×0,5 et ×2. "
+        "**Aucun impact n'est estimé sur des fills : les niveaux absolus en bps sont indicatifs** |",
         f"| Liquidité | {p['volume_jour_eur'] / 1e9:.0f} Md EUR par jour accessibles (hypothèse ; le marché fait environ 1 000 Md) donc participation TWAP nominale "
         f"{pct(p['participation_twap_nominale'], 1)} ; volume d'une minute = volume du jour × part de la minute (profil d'activité TRAIN) × activité réalisée du jour |",
         "| Données | HistData EURUSD 1 minute, prix **BID** ; le FX est OTC, la colonne volume vaut 0 : l'activité de prix sert de proxy ; horloge = heure locale de New York "
@@ -86,12 +163,33 @@ def encadre_frais(v) -> str:
         f"| Découpage | **TRAIN** {pr['TRAIN'][0][:4]}-{pr['TRAIN'][1][:4]} ({entier(ju['TRAIN'])} jours utilisables sur {entier(jo['TRAIN'])} : profil, σ et θ d'Almgren-Chriss calibrés ici, "
         f"donc le rejeu TRAIN est **in-sample**) · **VAL** {pr['VAL'][0][:4]}-{pr['VAL'][1][:4]} ({entier(ju['VAL'])} jours sur {entier(jo['VAL'])} : évaluation hors échantillon) · "
         "**TEST 2023+ : scellé**, le chargeur refuse l'année |",
-        "| Délai d'exécution | la tranche k est décidée avec les clôtures jusqu'à la minute précédente (testé), exécutée au prix de la barre ; aucune latence sous la minute dans le TCA "
+        "| Délai d'exécution | la tranche k est décidée avec les clôtures jusqu'à la minute précédente (testé), exécutée au prix de la barre ; aucune latence sous la minute dans le simulateur de coûts "
         "(l'agrégateur, lui, simule la milliseconde) |",
         "| Statistiques | shortfall en bps du notionnel, positif = on paie ; achat et vente moyennés (la dérive du prix s'annule : la moyenne mesure l'impact, l'écart-type le risque de prix) ; "
-        "IC95 par bootstrap en blocs de 5 jours (1 000 tirages), mêmes blocs pour toutes les stratégies ; coût total en EUR = jours × (1 achat + 1 vente) × 50 M EUR × shortfall moyen |",
+        "IC95 par bootstrap en blocs de 5 jours (1 000 tirages), mêmes blocs pour toutes les stratégies, donc variabilité d'échantillonnage des jours seulement, pas incertitude sur le modèle d'impact ; "
+        "coût total en EUR = jours × (1 achat + 1 vente) × 50 M EUR × shortfall moyen |",
         f"| Essais | {len(v['variantes'])} variantes ({len(v['strategies'])} stratégies × {len(v['modeles'])} modèles d'impact), toutes publiées, **aucune choisie sur VAL** : pas de DSR (rien à déflater) |",
     ])
+
+
+# ------------------------------------------------------------------ blocs TETE (7 colonnes) et TABLES (9 colonnes, repliés)
+def tableau_court(v) -> str:
+    lignes = [
+        "| Stratégie | Coût moyen TRAIN | Coût moyen VAL [IC95] | Écart-type TRAIN | Écart-type VAL | p95 VAL | Coût total VAL (M EUR) |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for s in v["strategies"]:
+        x = var(v, "lin", s)
+        t, a = x["TRAIN"], x["VAL"]
+        lignes.append(f"| {lib(v, s)} | {n(t['shortfall_moyen_bps'])} | {n(a['shortfall_moyen_bps'])} {ic(a['ic95_moyen_bps'])} | {n(t['ecart_type_bps'])} | {n(a['ecart_type_bps'])} | "
+                      f"{n(a['p95_bps'], 1)} | {n(a['cout_total_eur'] / 1e6, 1)} |")
+    return "\n".join(lignes)
+
+
+def bloc_tete(v) -> str:
+    notes = ("*Shortfall en bps du notionnel (positif = coût), achats et ventes poolés ; l'écart-type est celui d'un seul ordre ; coût total VAL en M EUR pour un achat et une vente de 50 M EUR par jour. "
+             "L'impact étant supposé, **lire le classement et la forme coût / risque, pas les niveaux absolus**. Tableaux complets (IC95 de l'écart à TWAP, p95 TRAIN, impact racine carrée) juste dessous.*")
+    return "\n\n".join([tableau_court(v), notes])
 
 
 def tableau_modele(v, modele) -> str:
@@ -113,11 +211,11 @@ def tableau_modele(v, modele) -> str:
     return "\n".join(lignes)
 
 
-def bloc_tete(v) -> str:
-    notes = ("*Shortfall en bps du notionnel (positif = coût), achats et ventes poolés ; l'écart-type est celui d'un seul ordre. "
-             "Coût total VAL en M EUR pour le flux hypothétique d'un achat et d'une vente de 50 M EUR par jour. "
-             "Modèles d'impact supposés, jamais estimés : voir l'encadré.*")
-    return "\n\n".join([encadre_frais(v), tableau_modele(v, "lin"), tableau_modele(v, "rac"), notes])
+def bloc_tables(v) -> str:
+    notes = ("*Les IC95 (bootstrap par blocs de 5 jours) ne mesurent que la variabilité d'échantillonnage des jours, pas l'incertitude sur le modèle d'impact, qui est supposé. "
+             "Comparer deux coûts moyens est circulaire (TWAP est Almgren-Chriss à λ → 0, donc tout λ > 0 coûte plus cher en moyenne) : l'information est la frontière coût / risque.*")
+    return "\n".join(["<details>", "<summary>Tableaux complets (9 colonnes) : impact linéaire et impact racine carrée par tranche</summary>", "",
+                      tableau_modele(v, "lin"), "", tableau_modele(v, "rac"), "", notes, "", "</details>"])
 
 
 # ------------------------------------------------------------------ bloc ROBUSTE
@@ -144,22 +242,23 @@ def bloc_robuste(v) -> str:
     lams = " / ".join(k.split("=")[1].replace(".", ",") for k in gag_v)
     gagnants = f"pour λ = {lams}, " + " / ".join(lib(v, gag_v[k]) for k in gag_v)
     optimum = " / ".join(lib(v, f"AC-lam{i}") for i, _ in enumerate(gag_v, start=1))
+    rec_t, rec_v = reconstruction_proxy_volume(v, "TRAIN"), reconstruction_proxy_volume(v, "VAL")
     lignes = [
-        "### Robuste ou pas ? Lecture en 30 secondes",
-        "",
-        f"1. **La théorie calibrée sur TRAIN se trompe dans les deux sens hors échantillon.** TWAP : coût théorique {n(e)} bps et écart-type {n(sd, 1)} ; "
+        f"1. **La théorie calibrée sur TRAIN se trompe dans les deux sens hors échantillon, et l'écart de coût vient du proxy de volume.** TWAP : coût théorique {n(e)} bps et écart-type {n(sd, 1)} ; "
         f"réalisé en TRAIN (in-sample) {n(t['shortfall_moyen_bps'])} et {n(t['ecart_type_bps'], 1)} ; réalisé en VAL {n(a['shortfall_moyen_bps'])} et {n(a['ecart_type_bps'], 1)}. "
         f"Le coût est {pct(a['shortfall_moyen_bps'] / e - 1)} au-dessus de la théorie en VAL (déjà {pct(t['shortfall_moyen_bps'] / e - 1)} en TRAIN) et le risque {pct(1 - a['ecart_type_bps'] / sd)} en dessous. "
-        f"Causes : l'impact varie comme l'inverse de l'activité du jour m, dont la moyenne de l'inverse dépasse l'inverse de la moyenne que la théorie suppose (E[1/m] = {n(reg['TRAIN']['inverse_m_moyen'])} en TRAIN "
-        f"pour une activité moyenne de {n(reg['TRAIN']['m_moyen'])}, {n(reg['VAL']['inverse_m_moyen'])} en VAL pour {n(reg['VAL']['m_moyen'])}) ; et VAL est plus calme (σ de fenêtre {n(reg['VAL']['sigma_rms_fenetre_bps'])} "
-        f"contre {n(reg['TRAIN']['sigma_rms_fenetre_bps'])} bps/min), donc moins de risque de prix.",
+        f"*Attribution du coût :* le FX n'a pas de volume centralisé, le « volume » simulé est donc proportionnel à l'activité de prix du jour m et l'impact varie en 1/m. La moyenne de 1/m dépasse l'inverse de la moyenne de m "
+        f"que la théorie suppose (inégalité de Jensen : E[1/m] = {n(reg['TRAIN']['inverse_m_moyen'])} en TRAIN pour une activité moyenne de {n(reg['TRAIN']['m_moyen'])}, {n(reg['VAL']['inverse_m_moyen'])} en VAL pour {n(reg['VAL']['m_moyen'])}). "
+        f"Cela suffit : impact temporaire théorique {n(rec_v['temporaire'], 3)} × E[1/m] + {n(rec_v['fixe'], 3)} (demi-spread et impact permanent) = {n(rec_v['reconstruit'], 3)} bps en VAL pour {n(rec_v['realise'], 3)} mesurés "
+        f"({n(rec_t['reconstruit'], 3)} contre {n(rec_t['realise'], 3)} en TRAIN). L'écart est donc une **conséquence du modèle de volume**, pas une observation de marché. "
+        f"*Attribution du risque :* VAL est plus calme (σ de fenêtre {n(reg['VAL']['sigma_rms_fenetre_bps'])} contre {n(reg['TRAIN']['sigma_rms_fenetre_bps'])} bps/min), donc moins de risque de prix.",
         f"2. **Le classement, lui, tient.** Corrélation de rang (Spearman) des 7 coûts moyens TRAIN / VAL : {n(rob['lin']['spearman_cout_moyen_train_val'])} en impact linéaire, "
         f"{n(rob['rac']['spearman_cout_moyen_train_val'])} en racine carrée ; le coût VAL vaut {n(min(rapports))} à {n(max(rapports))} fois le coût TRAIN selon la stratégie (linéaire). "
         + ("Les gagnants par aversion au risque (utilité E + λ·Var) sont les mêmes en TRAIN et en VAL : " + gagnants
            if memes else "Les gagnants par aversion au risque (utilité E + λ·Var) diffèrent entre TRAIN et VAL ; en VAL " + gagnants)
         + f" (l'optimum du modèle serait {optimum}).",
         "3. **Choisi avant de lire VAL : les paramètres.** Taille, fenêtre, modèles d'impact et leurs paramètres, valeurs de λ, stratégies sont des constantes du code (`execfx/impact.py`, `execfx/experiences.py`), "
-        "aucune n'a été ajustée pour améliorer un résultat VAL (une seule exécution de référence) ; la seule modification venue après un premier calcul est la correction du fuseau de la relecture du 13/10 (elle déplace la fenêtre, pas les paramètres). "
+        "aucune n'a été ajustée pour améliorer un résultat VAL (une seule exécution de référence) ; la seule modification venue après un premier calcul est la correction du fuseau du 13/10 (elle déplace la fenêtre, pas les paramètres). "
         f"Les {len(v['variantes'])} variantes sont toutes publiées, aucune n'est retenue sur son résultat VAL, TEST scellé. Le vrai point faible n'est pas un surajustement mais l'**impact supposé** : "
         f"AC λ=0,3 coûte {n(ac3['shortfall_moyen_bps'])} bps en linéaire et {n(rac3['shortfall_moyen_bps'])} en racine carrée, et "
         + ("la frontière coût / risque empirique se replie : AC λ=0,3 est plus risquée (" + n(ac3['ecart_type_bps']) + ") qu'AC λ=0,05 (" + n(ac2['ecart_type_bps']) + ") car l'impact varie d'un jour à l'autre, ce que la théorie ignore."
@@ -209,7 +308,7 @@ def bloc_lecture(v) -> str:
     gag_rac = v["robustesse"]["rac"]["meilleure_par_lambda_val"]
     gag_lin = v["robustesse"]["lin"]["meilleure_par_lambda_val"]
     lignes = [
-        f"- **L'arbitrage d'Almgren-Chriss se retrouve sur données réelles, jusqu'à un point.** Le coût moyen le plus bas est celui de {lib(v, mini)} ({n(r[mini]['shortfall_moyen_bps'])} bps), "
+        f"- **L'arbitrage d'Almgren-Chriss se retrouve sur données réelles, jusqu'à un point.** (Comparer les coûts moyens seuls est circulaire : TWAP est Almgren-Chriss à λ → 0 ; l'information est la frontière coût / risque.) Le coût moyen le plus bas est celui de {lib(v, mini)} ({n(r[mini]['shortfall_moyen_bps'])} bps), "
         f"le risque le plus bas celui de {lib(v, calme)} (écart-type {n(r[calme]['ecart_type_bps'])}, mais coût {n(r[calme]['shortfall_moyen_bps'])}). "
         f"De TWAP à AC λ=0,05 le risque baisse ({n(tw['ecart_type_bps'])} → {n(ac2['ecart_type_bps'])} bps) et le coût est multiplié par {n(ac2['shortfall_moyen_bps'] / tw['shortfall_moyen_bps'], 1)} "
         f"({n(tw['shortfall_moyen_bps'])} → {n(ac2['shortfall_moyen_bps'])}). "
@@ -223,13 +322,13 @@ def bloc_lecture(v) -> str:
         f"- **IS front-loaded : au-dessus de la frontière Almgren-Chriss.** Coût moyen {n(isf['shortfall_moyen_bps'])}, écart-type {n(isf['ecart_type_bps'])} ; "
         + (f"une exécution Almgren-Chriss interpolée au même coût moyen aurait un écart-type d'environ {n(interp, 1)}." if interp is not None else "hors du segment AC, pas d'interpolation.")
         + " Le planning heuristique (40 % de l'ordre dans les 10 premières minutes) paie son urgence sans l'optimiser.",
-        f"- **Le risque de modèle est le vrai sujet.** En impact racine carrée, AC λ=0,3 coûte {n(rr['AC-lam3']['shortfall_moyen_bps'])} bps au lieu de {n(ac3['shortfall_moyen_bps'])}, "
+        f"- **Le risque de modèle est le vrai sujet.** En impact racine carrée (appliqué par tranche d'une minute, voir « Loi racine carrée »), AC λ=0,3 coûte {n(rr['AC-lam3']['shortfall_moyen_bps'])} bps au lieu de {n(ac3['shortfall_moyen_bps'])}, "
         f"le classement des risques {'est le même' if ordre_lin == ordre_rac else 'change pour les stratégies les plus agressives'} "
         f"(AC λ=0,3 : écart-type {n(rr['AC-lam3']['ecart_type_bps'])}, la moins risquée) et les gagnants par λ deviennent "
         + ", ".join(lib(v, gag_rac[k]) for k in gag_rac) + " (en linéaire : " + ", ".join(lib(v, gag_lin[k]) for k in gag_lin) + "). "
         f"Avec l'impact linéaire ×0,5 / ×2, le TWAP coûte {n(sens['lin_x05']['TWAP']['shortfall_moyen_bps'])} / {n(sens['lin_x2']['TWAP']['shortfall_moyen_bps'])} bps et AC λ=0,3 "
         f"{n(sens['lin_x05']['AC-lam3']['shortfall_moyen_bps'])} / {n(sens['lin_x2']['AC-lam3']['shortfall_moyen_bps'])}. "
-        "L'urgence optimale dépend donc du modèle d'impact, qu'on ne peut pas estimer sans données de fills.",
+        "L'urgence optimale dépend donc du modèle d'impact, qu'on ne peut pas estimer sans données de fills ; le planning Almgren-Chriss restant dérivé sous impact linéaire, il est mal spécifié sous l'impact concave.",
     ]
     return "\n".join(lignes)
 
@@ -271,25 +370,29 @@ def bloc_sor(o) -> str:
 
 # ------------------------------------------------------------------ injection
 def blocs(v, o) -> dict[str, str]:
-    return {"TETE": bloc_tete(v), "ROBUSTE": bloc_robuste(v), "VARIANTES": bloc_variantes(v), "LECTURE": bloc_lecture(v), "SOR": bloc_sor(o)}
+    return {"CLES": bloc_cles(v, o), "FRAIS": bloc_frais(v), "TETE": bloc_tete(v), "TABLES": bloc_tables(v), "ROBUSTE": bloc_robuste(v),
+            "VARIANTES": bloc_variantes(v), "FRAIS_DETAIL": encadre_frais(v), "LECTURE": bloc_lecture(v), "SOR": bloc_sor(o)}
 
 
 def injecter(texte: str, nom: str, contenu: str) -> str:
     motif = re.compile(rf"(<!-- AUTO:{nom} -->)(.*?)(<!-- /AUTO:{nom} -->)", re.S)
     if not motif.search(texte):
-        raise SystemExit(f"balises AUTO:{nom} introuvables dans README.md")
+        raise SystemExit(f"balises AUTO:{nom} introuvables")
     return motif.sub(lambda m: f"{m.group(1)}\n{contenu}\n{m.group(3)}", texte)
 
 
 def main() -> None:
     v, o = charger()
-    brut = README.read_bytes()
-    crlf = brut.count(b"\r\n") > brut.count(b"\n") / 2
-    texte = brut.decode("utf-8").replace("\r\n", "\n")
-    for nom, contenu in blocs(v, o).items():
-        texte = injecter(texte, nom, contenu)
-    README.write_bytes((texte.replace("\n", "\r\n") if crlf else texte).encode("utf-8"))
-    print("README.md : blocs AUTO:TETE, ROBUSTE, VARIANTES, LECTURE, SOR réécrits depuis results/")
+    tous = blocs(v, o)
+    for fichier, noms in DESTINATIONS.items():
+        chemin = RACINE / fichier
+        brut = chemin.read_bytes()
+        crlf = brut.count(b"\r\n") > brut.count(b"\n") / 2
+        texte = brut.decode("utf-8").replace("\r\n", "\n")
+        for nom in noms:
+            texte = injecter(texte, nom, tous[nom])
+        chemin.write_bytes((texte.replace("\n", "\r\n") if crlf else texte).encode("utf-8"))
+        print(f"{fichier} : blocs AUTO:{', '.join(noms)} réécrits depuis results/")
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ sys.path.insert(0, str(RACINE))
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
+import matplotlib.dates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -59,36 +60,32 @@ def _axe_eur(ax, p):
 
 
 def hero(v, csv):
+    """Figure héro, lisible une fois réduite : un seul panneau compact, polices de 11 à 13 pt (affichée à environ 70 % dans le README)."""
     p, k = v["parametres"], eur_par_bps(v["parametres"]) / 1e6
     fin_train = pd.Timestamp(v["meta"]["periodes"]["TRAIN"][1])
     val = csv.loc[csv.index > fin_train]
-    fig, (ax, ax2) = plt.subplots(2, 1, figsize=(11, 7.4), sharex=True, gridspec_kw={"height_ratios": [3, 1.35], "hspace": 0.08})
+    fig, ax = plt.subplots(figsize=(7.6, 5.0))
     noms = list(v["strategies"])
     cum = {s: val[f"lin__{s}"].cumsum() * k for s in noms}
     for s in sorted(noms, key=lambda s: -cum[s].iloc[-1]):  # légende du plus cher au moins cher
         gras = s == "TWAP"
-        lib = v["strategies"][s]["libelle"] + (" (référence)" if gras else "")
-        ax.plot(cum[s].index, cum[s].values, color="#111111" if gras else COULEURS[s], lw=3.0 if gras else 1.7,
+        lib = v["strategies"][s]["libelle"].replace("Almgren-Chriss", "AC") + (" (réf.)" if gras else "")
+        ax.plot(cum[s].index, cum[s].values, color="#111111" if gras else COULEURS[s], lw=3.0 if gras else 1.8,
                 zorder=5 if gras else 3, label=f"{lib} : {f2(cum[s].iloc[-1], 1)} M€")
-    ax.legend(loc="upper left", fontsize=9, frameon=False)
+    ax.legend(loc="upper left", fontsize=11, frameon=False, labelspacing=0.3, handlelength=1.5)
     ax.set_xlim(val.index[0], val.index[-1])
-    ax.set_ylabel("coût cumulé d'exécution (M EUR)")
+    ax.set_ylim(0)
+    ax.set_ylabel("coût cumulé d'exécution (M EUR)", fontsize=12)
+    ax.tick_params(labelsize=11)
+    ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%Y"))
     ax.grid(alpha=0.3)
-    _axe_eur(ax, p)
-    ax.set_title(f"Un achat + une vente de {p['notionnel_eur'] / 1e6:.0f} M EUR EURUSD par jour : coût cumulé sur VAL 2019-2022 (hors échantillon)",
-                 fontsize=11.5, pad=26)
-    ax.text(0.5, 1.02, "frais : " + texte_frais(p), transform=ax.transAxes, ha="center", va="bottom", fontsize=8.2, color="0.25")
-    # bas : coût moyen sur 60 jours, pour voir les régimes (VAL plus calme que TRAIN)
-    for s in noms:
-        gras = s == "TWAP"
-        r = val[f"lin__{s}"].rolling(60).mean()
-        ax2.plot(r.index, r.values, color="#111111" if gras else COULEURS[s], lw=2.2 if gras else 1.2)
-    ax2.set_ylabel("coût du jour,\nmoyenne 60 jours (bps)")
-    ax2.set_yscale("log")
-    ax2.set_yticks([1, 2, 3, 5, 10, 15])
-    ax2.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: f"{y:g}"))
-    ax2.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-    ax2.grid(alpha=0.3, which="major", axis="y")
+    sec = ax.secondary_yaxis("right", functions=(lambda y: y / k, lambda b: b * k))
+    sec.set_ylabel("bps cumulés", fontsize=12)
+    sec.tick_params(labelsize=11)
+    ax.set_title("Coût cumulé d'exécution sur VAL 2019-2022 (hors échantillon)", fontsize=13, pad=30)
+    ax.text(0.5, 1.025, f"{p['notionnel_eur'] / 1e6:.0f} M EUR, achat + vente par jour · impact supposé (niveaux indicatifs)",
+            transform=ax.transAxes, ha="center", va="bottom", fontsize=11, color="0.25")
     fig.savefig(FIGURES / "hero_equity.png", dpi=DPI, bbox_inches="tight")
     plt.close(fig)
 

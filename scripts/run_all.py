@@ -22,6 +22,7 @@ import numpy as np  # noqa: E402
 from execfx import experiences as ex  # noqa: E402
 from execfx import figures as fg  # noqa: E402
 from execfx import tca  # noqa: E402
+from execfx.donnees import executer_avec_message_clair  # noqa: E402
 from execfx.impact import Hypotheses  # noqa: E402
 
 
@@ -167,4 +168,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    executer_avec_message_clair(main)  # sans les minutes HistData : message guidé, pas de trace brute

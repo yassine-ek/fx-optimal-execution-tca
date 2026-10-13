@@ -1,0 +1,3 @@
+*.ipynb linguist-documentation
+*.md text eol=lf
+*.json text eol=lf

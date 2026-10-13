@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tableau de bord des variantes</title>
 <meta name="description" content="Filtrer les variantes d'une stratégie sur des statistiques TRAIN, combiner celles qui restent et lire le résultat sur TRAIN puis VAL.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tableau de bord interactif des variantes d'une stratégie">
+<meta property="og:description" content="Filtrer les variantes sur la période de sélection, combiner celles qui restent et lire le résultat hors échantillon. Le jeu de test n'est jamais affiché.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d4ed8'/%3E%3Cpath d='M5 23l7-8 5 4 10-12' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root {
   --bg: #f7f8fa; --card: #ffffff; --fg: #1b1f27; --muted: #5d6675; --border: #d9dee6;
@@ -44,7 +49,6 @@ p { margin: 0 0 8px; }
 button { font: inherit; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
   color: var(--fg); cursor: pointer; }
 button:hover { border-color: var(--accent); }
-.compte { font-weight: 600; margin: 4px 0 10px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -64,68 +68,124 @@ tr.reference td { font-style: italic; }
 .erreur { border-left: 4px solid var(--mauvais); }
 .erreur code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
 .cache { display: none; }
-.bandeau { background: var(--accent-soft); border-radius: 8px; padding: 8px 12px; font-size: .88rem; margin: 0 0 16px; }
+.bandeau { background: var(--accent-soft); border-radius: 8px; padding: 6px 12px; font-size: .84rem; margin: 0 0 12px; }
+/* bandeau haut : retour au dépôt et au profil */
+.topbar { background: var(--card); border-bottom: 1px solid var(--border); font-size: .88rem; }
+.topbar-in { max-width: 1120px; margin: 0 auto; padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.topbar a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.topbar a:hover, .topbar a:focus-visible { text-decoration: underline; }
+.topbar .droite { margin-left: auto; color: var(--muted); }
+/* premier écran : verdict + chiffres clés, puis graphique principal à côté des filtres */
+main h1 { margin-bottom: 8px; }
+.verdict { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; margin: 0 0 10px; }
+.verdict .feu { margin-top: 5px; }
+.verdict h2 { margin: 0 0 2px; font-size: 1rem; }
+.verdict p { margin: 4px 0 0; font-size: .88rem; color: var(--muted); }
+.verdict summary { cursor: pointer; font-size: .8rem; color: var(--accent); }
+.verdict summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kpis { display: grid; gap: 10px; grid-template-columns: repeat(5, 1fr); margin: 0 0 12px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; min-width: 0; }
+.kpi .lab { display: block; font-size: .74rem; color: var(--muted); line-height: 1.25; min-height: 2.5em; }
+.kpi .val { display: block; font-size: 1.45rem; line-height: 1.2; font-weight: 700; font-variant-numeric: tabular-nums; }
+.haut { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; margin: 0 0 16px; }
+.haut > * { margin: 0; min-width: 0; }
+@media (max-width: 900px) { .haut { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+details.card > summary { cursor: pointer; font-weight: 600; list-style-position: inside; }
+details.card[open] > summary { margin-bottom: 10px; }
+details.card > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.compact .filtre { margin: 0 0 8px; }
+.compact .filtre label.titre { font-size: .84rem; margin-bottom: 2px; }
+.compact .ligne input[type=number] { width: 80px; padding: 3px 5px; font-size: .88rem; }
+.compact .cases label { font-size: .88rem; min-height: 28px; }
+.compact button { padding: 3px 10px; font-size: .88rem; }
+#filtres { display: block; }
+.duo { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); margin: 0 0 16px; }
+.duo > .card { margin: 0; min-width: 0; }
+.table-wrap.defile { max-height: 420px; overflow: auto; }
+.table-wrap.defile th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+@media (pointer: coarse), (max-width: 480px) {
+  .cases label { min-height: 36px; padding: 0 4px; }
+  .cases input[type=checkbox], .compact .cases input[type=checkbox] { width: 20px; height: 20px; }
+  .ligne input[type=range] { height: 32px; }
+  .compact button, button { min-height: 36px; }
+}
+@media (max-width: 640px) {                            /* téléphone : le graphique doit apparaître dès le premier écran */
+  .kpis { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .kpis .kpi:last-child { display: none; }            /* « variantes retenues » reste lisible dans le résumé des filtres, sous le graphique */
+  .kpi { padding: 6px 10px; }
+  .kpi .lab { min-height: 0; font-size: .7rem; }
+  .kpi .val { font-size: 1.2rem; }
+  .bandeau { font-size: .78rem; padding: 4px 10px; margin-bottom: 10px; }
+  .verdict { padding: 8px 12px; margin-bottom: 8px; }
+  .verdict h2 { font-size: .95rem; }
+  .topbar-in { padding: 6px 16px; }
+}
 @media (max-width: 480px) {
-  h1 { font-size: 1.3rem; } .graphe { height: 320px; } th, td { padding: 5px 4px; }
+  h1 { font-size: 1.2rem; } .graphe { height: 320px; } th, td { padding: 5px 4px; }
   .masque-mobile { display: none; }
+  main { padding-top: 14px; }
 }
 </style>
 </head>
 <body>
+<nav class="topbar" aria-label="Liens du projet"><div class="topbar-in">
+  <a id="lien-depot" class="cache" href="#">&larr; Dépôt GitHub</a>
+  <a id="lien-profil" href="https://github.com/yassine-ek">Profil : Yassine EL KORAICHI</a>
+</div></nav>
 <main>
   <header>
     <h1 id="titre">Tableau de bord</h1>
-    <p class="sub" id="sous-titre"></p>
-    <div class="card frais cache" id="frais-carte"><strong>Frais et hypothèses.</strong> <span id="frais"></span></div>
     <div class="bandeau lb" id="bandeau">La sélection n'utilise que TRAIN&nbsp;; VAL est hors échantillon&nbsp;; TEST jamais affiché.</div>
   </header>
 
   <div id="erreur" class="card erreur cache"></div>
 
   <div id="app" class="cache">
-    <section class="card" aria-labelledby="h-filtres">
-      <h2 id="h-filtres" class="lb">Conditions de départ (filtres sur statistiques TRAIN)</h2>
-      <div class="grille" id="filtres"></div>
-      <p class="compte" id="compte"></p>
-      <button type="button" id="reset">Réinitialiser les filtres</button>
+    <section aria-label="Verdict et chiffres clés de la combinaison">
+      <div class="card verdict">
+        <div class="feu" id="feu" aria-hidden="true"></div>
+        <div>
+          <h2 id="h-overfit"><span id="voyant-nom">Overfit&nbsp;?</span> <span id="overfit-titre"></span></h2>
+          <details id="verdict-detail" open><summary>Détail du verdict</summary><p id="overfit-texte"></p></details>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
     </section>
 
-    <section class="card" aria-labelledby="h-liste">
-      <h2 id="h-liste">Variantes</h2>
-      <div class="table-wrap"><table id="liste"></table></div>
-      <p class="note" id="note-ref"></p>
-    </section>
+    <div class="haut">
+      <section class="card" aria-labelledby="h-g1">
+        <h2 id="h-g1">1. Courbe finale : combinaison des variantes retenues</h2>
+        <label class="note" id="log-label"><input type="checkbox" id="log"> échelle logarithmique</label>
+        <div id="g1" class="graphe"></div>
+        <p class="legende-lecture lb" id="lec-g1">Comment lire&nbsp;: capital composé, base 100, net de frais. Traits fins gris = chaque variante retenue&nbsp;;
+          trait gras = leur combinaison (<span id="mode-comb">moyenne équipondérée</span>). Zone grisée = TRAIN (sélection)&nbsp;;
+          à droite de la ligne = VAL (hors échantillon). Une courbe qui monte en gris puis plonge à droite est la signature d'un overfit.</p>
+      </section>
 
-    <section class="card" aria-labelledby="h-g1">
-      <h2 id="h-g1">1. Courbe finale : combinaison des variantes retenues</h2>
-      <label class="note" id="log-label"><input type="checkbox" id="log"> échelle logarithmique</label>
-      <div id="g1" class="graphe"></div>
-      <p class="legende-lecture lb" id="lec-g1">Comment lire&nbsp;: capital composé, base 100, net de frais. Traits fins gris = chaque variante retenue&nbsp;;
-        trait gras = leur combinaison (<span id="mode-comb">moyenne équipondérée</span>). Zone grisée = TRAIN (sélection)&nbsp;;
-        à droite de la ligne = VAL (hors échantillon). Une courbe qui monte en gris puis plonge à droite est la signature d'un overfit.</p>
-    </section>
+      <details class="card compact" id="bloc-filtres" open>
+        <summary><span id="h-filtres" class="lb">Filtres sur TRAIN (sélection)</span> : <span id="compte"></span></summary>
+        <div id="filtres"></div>
+        <button type="button" id="reset">Réinitialiser les filtres</button>
+      </details>
+    </div>
 
-    <section class="card" aria-labelledby="h-g2" id="sec-g2">
-      <h2 id="h-g2">2. Drawdown de la combinaison</h2>
-      <div id="g2" class="graphe petit"></div>
-      <p class="legende-lecture">Comment lire&nbsp;: perte depuis le dernier sommet de la courbe composée. Plus c'est profond et long, plus la stratégie est dure à tenir.</p>
-    </section>
+    <details class="card" id="contexte">
+      <summary>Contexte, frais et hypothèses</summary>
+      <p class="sub" id="sous-titre"></p>
+      <div class="card frais cache" id="frais-carte"><strong>Frais et hypothèses.</strong> <span id="frais"></span></div>
+      <p class="note lb" id="regle">Règle&nbsp;: vert si Sharpe VAL ≥ 0,5 × Sharpe TRAIN et &gt; 0&nbsp;; orange si VAL positif mais très dégradé&nbsp;; rouge si Sharpe VAL ≤ 0.</p>
+    </details>
 
-    <div class="grille">
+    <div class="duo">
+      <section class="card" aria-labelledby="h-g2" id="sec-g2">
+        <h2 id="h-g2">2. Drawdown de la combinaison</h2>
+        <div id="g2" class="graphe petit"></div>
+        <p class="legende-lecture">Comment lire&nbsp;: perte depuis le dernier sommet de la courbe composée. Plus c'est profond et long, plus la stratégie est dure à tenir.</p>
+      </section>
       <section class="card" aria-labelledby="h-metriques">
         <h2 id="h-metriques">Métriques de la combinaison</h2>
         <div class="table-wrap"><table id="metriques"></table></div>
         <p class="note" id="note-metriques">Recalculées dans le navigateur à partir des rendements quotidiens nets. Sharpe annualisé par √252, rendement annualisé = moyenne × 252.</p>
-      </section>
-      <section class="card" aria-labelledby="h-overfit">
-        <div class="overfit">
-          <div class="feu" id="feu" aria-hidden="true"></div>
-          <div>
-            <h2 id="h-overfit"><span id="voyant-nom">Overfit&nbsp;?</span> <span id="overfit-titre"></span></h2>
-            <p id="overfit-texte"></p>
-            <p class="note lb" id="regle">Règle&nbsp;: vert si Sharpe VAL ≥ 0,5 × Sharpe TRAIN et &gt; 0&nbsp;; orange si VAL positif mais très dégradé&nbsp;; rouge si Sharpe VAL ≤ 0.</p>
-          </div>
-        </div>
       </section>
     </div>
 
@@ -137,6 +197,12 @@ tr.reference td { font-style: italic; }
       <p class="legende-lecture lb" id="lec-g3">Comment lire&nbsp;: un point par variante testée, y compris celles écartées. Sur la diagonale, VAL = TRAIN (pas d'overfit).
         Sous la diagonale, la variante est moins bonne hors échantillon. Un nuage plaqué sous la diagonale, avec des Sharpe TRAIN flatteurs
         et des Sharpe VAL autour de zéro, est typique d'une sélection sur du bruit.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-liste">
+      <h2 id="h-liste">Variantes</h2>
+      <div class="table-wrap defile"><table id="liste"></table></div>
+      <p class="note" id="note-ref"></p>
     </section>
   </div>
 
@@ -171,12 +237,32 @@ tr.reference td { font-style: italic; }
   };
   var mesure = function (st) { return COUT ? st.cout : st.sharpe; };   // grandeur comparée TRAIN / VAL
 
+  // ------------------------------------------------------------------ bandeau haut et métadonnées
+  function urlDepot(d, loc) {                          // data.depot_url, sinon https://<compte>.github.io/<dépôt>/ → https://github.com/<compte>/<dépôt>
+    if (d && typeof d.depot_url === 'string' && /^https:\/\//.test(d.depot_url)) return d.depot_url;
+    var h = /^([a-z0-9-]+)\.github\.io$/i.exec(loc.hostname || ''), seg = (loc.pathname || '').split('/')[1];
+    return (h && seg && /^[\w.-]+$/.test(seg)) ? 'https://github.com/' + h[1] + '/' + seg : null;
+  }
+  function majLiens(d) {
+    var u = urlDepot(d, window.location), a = $('#lien-depot');
+    if (u) { a.href = u; a.classList.remove('cache'); } else a.classList.add('cache');
+  }
+  function majMeta(d) {                                // les valeurs statiques du <head> restent génériques pour les robots qui n'exécutent pas le JS
+    var desc = String(d.description || d.sous_titre || '');
+    if (desc.length > 200) desc = desc.slice(0, 197).replace(/\s+\S*$/, '') + '…';
+    var pose = function (sel, v) { var m = document.querySelector(sel); if (m && v) m.setAttribute('content', v); };
+    pose('meta[property="og:title"]', d.titre);
+    pose('meta[property="og:description"]', desc);
+    pose('meta[name="description"]', desc);
+  }
+
   // ------------------------------------------------------------------ chargement
   function montrerErreur(html) {
     var e = $('#erreur'); e.innerHTML = html; e.classList.remove('cache');
   }
 
   function demarrer() {
+    majLiens(window.DATA);
     if (typeof Plotly === 'undefined') {
       montrerErreur('<strong>Plotly n\'a pas pu être chargé</strong> (connexion requise vers cdnjs.cloudflare.com). Recharger la page une fois en ligne.');
       return;
@@ -273,7 +359,7 @@ tr.reference td { font-style: italic; }
         var pas = f.pas || (entier ? 1 : Math.max((mx - mn) / 200, 1e-6));
         if (!entier && !f.pas) pas = Number(pas.toPrecision(1));
         if (!(pas > 0)) pas = 1;
-        var lo = Math.floor(mn / pas) * pas, hi = Math.ceil(mx / pas) * pas;
+        var lo = Number((Math.floor(mn / pas) * pas).toPrecision(12)), hi = Number((Math.ceil(mx / pas) * pas).toPrecision(12));   // toPrecision : pas de bruit flottant dans les champs
         if (hi === lo) hi = lo + pas;
         var est_min = f.type === 'min';
         var init = est_min ? lo : hi;
@@ -490,6 +576,25 @@ tr.reference td { font-style: italic; }
     return { T: T, V: V };
   }
 
+  function majKpis(m, nbRet, total) {                  // cinq chiffres clés de la combinaison, juste sous le verdict
+    var T = m && m.T, V = m && m.V, nd = 'n/d', k;
+    if (COUT) {
+      k = [['Coût moyen par jour · ' + LB.train + ' (bps)', T ? fmtN(T.moy, 2) : nd],
+           ['Coût moyen par jour · ' + LB.val + ' (bps)', V ? fmtN(V.moy, 2) : nd],
+           ['p95 du coût quotidien · ' + LB.val + ' (bps)', V ? fmtN(V.p95, 2) : nd],
+           ['Coût cumulé · ' + LB.val + ' (bps)', V ? fmtN(V.cumul, 0) : nd]];
+    } else {
+      k = [['Sharpe annualisé · ' + LB.train, T ? fmtN(T.sharpe, 2) : nd],
+           ['Sharpe annualisé · ' + LB.val, V ? fmtN(V.sharpe, 2) : nd],
+           ['Rendement annualisé · ' + LB.val, V ? fmtP(V.rend, 1) : nd],
+           ['Drawdown max · ' + LB.val, V ? fmtP(V.dd, 1) : nd]];
+    }
+    k.push(['Variantes retenues', nbRet + ' / ' + total]);
+    $('#kpis').innerHTML = k.map(function (x) {
+      return '<div class="kpi"><span class="lab">' + echap(x[0]) + '</span><span class="val">' + echap(x[1]) + '</span></div>';
+    }).join('');
+  }
+
   function indicateurOverfit(m, nbRetenues) {
     var feu = $('#feu'), titre = $('#overfit-titre'), txt = $('#overfit-texte');
     feu.className = 'feu';
@@ -563,7 +668,7 @@ tr.reference td { font-style: italic; }
     var V = comb.i0 >= 0 ? statsCout(comb.r, Math.max(comb.i0, S.iTrain + 1), S.N - 1) : null;
     var ligne = function (nom, a, b) { return '<tr><td class="gauche">' + nom + '</td><td>' + a + '</td><td>' + b + '</td></tr>'; };
     var h = L('<thead><tr><th class="gauche">Métrique</th><th>TRAIN</th><th>VAL</th></tr></thead><tbody>', true);
-    if (!T || !V) { $('#metriques').innerHTML = h + '<tr><td colspan="3">Aucune variante retenue.</td></tr></tbody>'; return; }
+    if (!T || !V) { $('#metriques').innerHTML = h + '<tr><td colspan="3">Aucune variante retenue.</td></tr></tbody>'; return { T: T, V: V }; }
     h += ligne('Coût moyen par jour (bps)', fmtN(T.moy, 2), fmtN(V.moy, 2));
     h += ligne('Écart-type du coût quotidien (bps)', fmtN(T.sd, 2), fmtN(V.sd, 2));
     h += ligne('p95 du coût quotidien (bps)', fmtN(T.p95, 2), fmtN(V.p95, 2));
@@ -574,6 +679,7 @@ tr.reference td { font-style: italic; }
     }
     h += ligne('Jours observés', fmtN(T.n, 0), fmtN(V.n, 0));
     $('#metriques').innerHTML = h + '</tbody>';
+    return { T: T, V: V };
   }
 
   function indicateurRobuste(retenues) {
@@ -630,8 +736,10 @@ tr.reference td { font-style: italic; }
     graphe1(retenues, comb, refs);
     if (!COUT) graphe2(comb);
     graphe3(ids);
-    if (COUT) { tableauMetriquesCout(comb); indicateurRobuste(retenues); }
-    else indicateurOverfit(tableauMetriques(retenues, comb), retenues.length);
+    var m;
+    if (COUT) { m = tableauMetriquesCout(comb); indicateurRobuste(retenues); }
+    else { m = tableauMetriques(retenues, comb); indicateurOverfit(m, retenues.length); }
+    majKpis(m, retenues.length, total);
   }
 
   function init(donnees) {
@@ -647,6 +755,7 @@ tr.reference td { font-style: italic; }
     }
     $('#titre').textContent = D.titre || 'Tableau de bord';
     document.title = D.titre || document.title;
+    majMeta(D); majLiens(D);
     $('#sous-titre').textContent = D.sous_titre || '';
     $('#frais').textContent = D.frais || '';
     if (D.frais) $('#frais-carte').classList.remove('cache');
@@ -655,6 +764,9 @@ tr.reference td { font-style: italic; }
     if (COUT) appliquerModeCout();
     if (LB.perso) document.querySelectorAll('.lb').forEach(function (e) { e.innerHTML = L(e.innerHTML, true); });
     construireFiltres();
+    if (window.matchMedia('(max-width: 640px)').matches) {      // téléphone : filtres et détail du verdict repliés pour laisser la place au graphique
+      $('#bloc-filtres').removeAttribute('open'); $('#verdict-detail').removeAttribute('open');
+    }
     $('#app').classList.remove('cache');
     $('#log').addEventListener('change', rafraichir);
     $('#zoom').addEventListener('change', rafraichir);
@@ -663,7 +775,7 @@ tr.reference td { font-style: italic; }
     var mq = window.matchMedia('(prefers-color-scheme: dark)');
     var rerender = function () { rafraichir(); };
     if (mq.addEventListener) mq.addEventListener('change', rerender); else if (mq.addListener) mq.addListener(rerender);
-    window.__dashboard = { S: S, D: D, mode: COUT ? 'cout' : 'rendement', statsPeriode: statsPeriode, statsCout: statsCout, spearman: spearman };      // pour tests manuels dans la console
+    window.__dashboard = { S: S, D: D, mode: COUT ? 'cout' : 'rendement', statsPeriode: statsPeriode, statsCout: statsCout, spearman: spearman, urlDepot: urlDepot };      // pour tests manuels dans la console
   }
 
   demarrer();

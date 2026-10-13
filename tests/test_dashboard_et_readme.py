@@ -4,6 +4,7 @@ Tout est lu dans results/ (versionné) : aucune donnée de marché requise, sauf
 import importlib.util
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +16,7 @@ RACINE = Path(__file__).resolve().parents[1]
 DOCS = RACINE / "docs"
 RESULTATS = RACINE / "results"
 GABARIT = RACINE.parent / "_outils" / "dashboard" / "index.html"
+IGNORES = {".venv", "venv", ".git", "build", "__pycache__", ".pytest_cache", "site-packages", "node_modules", ".ipynb_checkpoints", "histdata"}
 
 
 def _json(chemin: Path) -> dict:
@@ -26,6 +28,19 @@ def _module(nom: str):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _fichiers_du_depot() -> list[Path]:
+    """Fichiers suivis ou à suivre par git (hors .gitignore) ; repli sur le parcours du dossier, sans environnement virtuel, build ni caches."""
+    try:
+        sortie = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=RACINE,
+                                capture_output=True, text=True, check=True).stdout
+        fichiers = [RACINE / ligne for ligne in sortie.splitlines() if ligne]
+    except (OSError, subprocess.CalledProcessError):
+        fichiers = []
+    if not fichiers:
+        fichiers = list(RACINE.rglob("*"))
+    return [p for p in fichiers if p.is_file() and not (set(p.relative_to(RACINE).parts) & IGNORES)]
 
 
 def test_variantes_val_identiques_au_verdict_de_run_all():
@@ -88,21 +103,51 @@ def test_page_du_tableau_de_bord_identique_au_gabarit_commun():
 
 
 def test_blocs_de_chiffres_du_readme_lus_dans_results():
+    """Chaque bloc AUTO (README.md et docs/details.md) est identique à ce que génère scripts/generer_readme_tete.py depuis results/."""
     mod = _module("generer_readme_tete")
     v, o = mod.charger()
-    texte = (RACINE / "README.md").read_text(encoding="utf-8").replace("\r\n", "\n")
-    for nom, contenu in mod.blocs(v, o).items():
-        m = re.search(rf"<!-- AUTO:{nom} -->\n(.*?)\n<!-- /AUTO:{nom} -->", texte, re.S)
-        assert m, f"balises AUTO:{nom} absentes du README"
-        assert m.group(1) == contenu, f"bloc AUTO:{nom} périmé : relancer scripts/generer_readme_tete.py"
+    tous = mod.blocs(v, o)
+    for fichier, noms in mod.DESTINATIONS.items():
+        texte = (RACINE / fichier).read_text(encoding="utf-8").replace("\r\n", "\n")
+        for nom in noms:
+            m = re.search(rf"<!-- AUTO:{nom} -->\n(.*?)\n<!-- /AUTO:{nom} -->", texte, re.S)
+            assert m, f"balises AUTO:{nom} absentes de {fichier}"
+            assert m.group(1) == tous[nom], f"bloc AUTO:{nom} de {fichier} périmé : relancer scripts/generer_readme_tete.py"
+
+
+def test_ecart_theorie_realise_du_twap_vient_entierement_du_proxy_de_volume():
+    """Réalisé = impact temporaire théorique x E[1/m] + demi-spread + permanent : l'écart théorie / réalisé est une propriété du modèle de volume."""
+    mod = _module("generer_readme_tete")
+    v, _ = mod.charger()
+    for periode in ("TRAIN", "VAL"):
+        r = mod.reconstruction_proxy_volume(v, periode)
+        assert abs(r["reconstruit"] - r["realise"]) < 1e-3, (periode, r)
+        assert r["realise"] > r["theorie"]
+
+
+def test_readme_premier_ecran_longueur_et_tableaux_replies():
+    """Résultats clés et figure héro dans les 45 premières lignes, impact supposé et LP fictifs dits en tête, README court, tableaux de plus de 7 colonnes repliés."""
+    lignes = (RACINE / "README.md").read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
+    assert len(lignes) <= 400, len(lignes)
+    tete = "\n".join(lignes[:45])
+    assert "## Résultats clés" in tete and "figures/hero_equity.png" in tete
+    assert "actions/workflows/tests.yml/badge.svg" in tete
+    assert "supposé" in tete and "fictif" in tete
+    assert "## Comment ce projet a été construit" in "\n".join(lignes)
+    dans_details = 0
+    for i, ligne in enumerate(lignes[:-1]):
+        dans_details += ligne.count("<details>") - ligne.count("</details>")
+        if ligne.startswith("|") and re.fullmatch(r"\|[-| :]+\|", lignes[i + 1].strip()) and not dans_details:
+            assert ligne.count("|") - 1 <= 7, f"tableau de {ligne.count('|') - 1} colonnes hors <details> : ligne {i + 1}"
 
 
 def test_chaque_dossier_a_son_readme_et_les_figures_citees_existent():
     for dossier in ("execfx", "tests", "scripts", "notebooks", "figures", "results", "docs"):
         assert (RACINE / dossier / "README.md").is_file(), dossier
-    readme = (RACINE / "README.md").read_text(encoding="utf-8")
-    for png in set(re.findall(r"\(figures/([\w.-]+\.png)\)", readme)):
-        assert (RACINE / "figures" / png).is_file(), png
+    for source in ("README.md", "docs/details.md"):
+        texte = (RACINE / source).read_text(encoding="utf-8")
+        for png in set(re.findall(r"figures/([\w.-]+\.png)", texte)):
+            assert (RACINE / "figures" / png).is_file(), (source, png)
     for png in set(re.findall(r"`([\w.-]+\.png)`", (RACINE / "figures" / "README.md").read_text(encoding="utf-8"))):
         assert (RACINE / "figures" / png).is_file(), png
 
@@ -111,13 +156,9 @@ def test_aucun_chemin_absolu_de_machine_dans_le_depot():
     """Pas de chemin absolu de machine (lecteur, puis dossier Users) dans le code, les notebooks, les README et les résultats."""
     motif = re.compile(r"[A-Za-z]:[\\/]+Users")
     exclus = {"test_dashboard_et_readme.py"}
-    fautifs = []
-    for p in RACINE.rglob("*"):
-        if (not p.is_file() or p.name in exclus or p.suffix not in {".py", ".md", ".json", ".ipynb", ".yml", ".txt", ".csv", ".js", ".html", ".ini"}
-                or any(x in p.parts for x in ("__pycache__", ".pytest_cache", "histdata", ".git"))):
-            continue
-        if motif.search(p.read_text(encoding="utf-8", errors="ignore")):
-            fautifs.append(str(p.relative_to(RACINE)))
+    fautifs = [str(p.relative_to(RACINE)) for p in _fichiers_du_depot()
+               if p.name not in exclus and p.suffix in {".py", ".md", ".json", ".ipynb", ".yml", ".txt", ".csv", ".js", ".html", ".ini"}
+               and motif.search(p.read_text(encoding="utf-8", errors="ignore"))]
     assert not fautifs, fautifs
 
 

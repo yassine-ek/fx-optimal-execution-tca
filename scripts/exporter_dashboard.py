@@ -1,4 +1,4 @@
-"""Exporte le tableau de bord interactif (gabarit commun projets_cv/_outils/dashboard) dans docs/.
+"""Exporte le tableau de bord interactif (page commune aux trois dépôts à tableau de bord) dans docs/.
 
 Lit UNIQUEMENT des fichiers de results/ (aucune donnée de marché requise, donc exécutable en CI) :
   - results/couts_quotidiens.csv        coût du jour (bps) de chaque variante, TRAIN puis VAL (le TEST n'existe pas)
@@ -42,9 +42,9 @@ def texte_frais(p: dict, meta: dict) -> str:
         f"Ordre parent de {p['notionnel_eur'] / 1e6:.0f} M EUR (un achat et une vente par jour), {p['horizon_min']} tranches d'une minute, "
         f"fenêtre {p['debut_heure_ny']}h00-{p['debut_heure_ny'] + 1}h00 heure de New York, prix BID EURUSD 1 minute",
         f"demi-spread {_virgule(p['demi_spread_bps'], 1)} bp sur tout l'ordre ; impact temporaire linéaire {_virgule(p['eta_bps'], 0)} bps × participation "
-        f"(ou racine carrée calibrée dessus, y = {_virgule(p['y_racine'], 3)}), ×0,5 et ×2 en sensibilité ; impact permanent {_virgule(p['gamma_bps'], 1)} bp pour l'ordre complet ; "
+        f"(ou racine carrée appliquée par tranche d'une minute, calibrée dessus, y = {_virgule(p['y_racine'], 3)}), ×0,5 et ×2 en sensibilité ; impact permanent {_virgule(p['gamma_bps'], 1)} bp pour l'ordre complet ; "
         f"liquidité accessible {p['volume_jour_eur'] / 1e9:.0f} Md EUR par jour (participation TWAP nominale {_virgule(100 * p['participation_twap_nominale'], 1)} %). "
-        "L'impact est SUPPOSÉ, jamais estimé sur des fills",
+        "L'impact est SUPPOSÉ, jamais estimé sur des fills : niveaux absolus indicatifs, seuls le classement et la forme de la frontière coût / risque sont robustes",
         f"TRAIN {meta['periodes']['TRAIN'][0][:4]}-{meta['periodes']['TRAIN'][1][:4]} (profil d'activité et paramètres d'Almgren-Chriss calibrés ici : "
         f"le rejeu TRAIN est in-sample), VAL {meta['periodes']['VAL'][0][:4]}-{meta['periodes']['VAL'][1][:4]} hors échantillon, TEST 2023+ scellé",
         "Lecture : le coût du jour est la moyenne du shortfall de l'achat et de la vente, en bps du notionnel d'un ordre ; la courbe est le coût cumulé "
@@ -89,7 +89,8 @@ def main() -> None:
         "mode": "cout",
         "notionnel_eur": v["parametres"]["notionnel_eur"],
         "ordres_par_jour": 2,                                  # un achat et une vente par jour
-        "titre": "Projet 03 : coût d'exécution de 50 M EUR d'EURUSD, 28 variantes",
+        "titre": "Coût d'exécution de 50 M EUR d'EURUSD sous impact supposé, 28 variantes",
+        "description": "Coût d'exécution d'un ordre FX de 50 M EUR rejoué sur 3 366 jours réels : 28 variantes, impact supposé (niveaux indicatifs), TRAIN puis VAL.",
         "sous_titre": "7 stratégies × 4 modèles d'impact. Filtrer sur le coût et le risque TRAIN (in-sample), moyenner les variantes retenues, "
                       "lire le coût cumulé sur TRAIN puis VAL (hors échantillon). La courbe monte (coût cumulé en bps) : plus elle monte vite, plus l'exécution coûte.",
         "frais": texte_frais(v["parametres"], v["meta"]),

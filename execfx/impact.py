@@ -1,8 +1,9 @@
 """Modèles d'impact de marché et HYPOTHÈSES du projet.
 
-Aucune donnée de transaction : l'impact est SUPPOSÉ, pas estimé. Les valeurs ci-dessous sont des ordres
-de grandeur plausibles pour 50 M EUR d'EURUSD, documentés ici pour qu'on puisse les contester et les
-faire varier (le script `run_all.py` rejoue tout avec l'impact x0.5 et x2).
+Aucune donnée de transaction : l'impact est SUPPOSÉ, pas estimé. Les valeurs ci-dessous (eta, pool de liquidité) sont des
+hypothèses indicatives, NON sourcées sur des fills : les niveaux absolus en bps qui en découlent sont indicatifs, seuls le
+classement des stratégies et la forme de la frontière coût / risque sont robustes. Elles sont documentées ici pour qu'on
+puisse les contester et les faire varier (le script `run_all.py` rejoue tout avec l'impact x0.5 et x2).
 
 Notations : X = notionnel du parent, V_k = « volume » de la minute k (EUR), n_k = fraction du parent
 négociée à la minute k, rho_k = n_k * X / V_k = taux de participation.
@@ -49,7 +50,12 @@ class ModeleImpact:
     """Impact TEMPORAIRE d'une tranche (le permanent est commun, linéaire, géré à part).
 
     `lineaire`      : slippage_bps = eta_bps * rho
-    `racine_carree` : slippage_bps = y * sigma_bps * sqrt(rho)   (loi « racine carrée » : coût ∝ sigma * sqrt(q/V))
+    `racine_carree` : slippage_bps = y * sigma_bps * sqrt(rho)   (coût ∝ sigma * sqrt(q/V), appliqué PAR TRANCHE d'une minute)
+    ATTENTION : la loi racine carrée de la littérature (Bouchaud, Tóth) vaut pour l'ORDRE PARENT entier, coût ≈ Y * sigma_jour *
+    sqrt(Q/V_jour). Ici elle est appliquée à chaque tranche, avec rho_k = n_k * X / V_k, et l'impact de chaque tranche s'éteint
+    complètement avant la suivante (transitoire à décroissance complète ; seul le permanent s'accumule) : c'est un impact temporaire
+    concave à la Almgren et al. (2005), pas la loi du métaordre. Avec le calibrage ci-dessous, c'est le linéaire déformé, pas un
+    second modèle indépendant ; le planning Almgren-Chriss, lui, est dérivé sous impact linéaire (mal spécifié sous l'impact concave).
     Le coefficient y est calibré pour que les deux modèles coïncident au point de référence
     (TWAP nominal, volume attendu) ; ils ne diffèrent qu'ailleurs : la racine carrée est concave,
     elle punit PLUS les petites tranches et MOINS les grosses que le linéaire.
