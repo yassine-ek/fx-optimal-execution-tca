@@ -133,7 +133,6 @@ def test_readme_premier_ecran_longueur_et_tableaux_replies():
     assert "## Résultats clés" in tete and "figures/hero_equity.png" in tete
     assert "actions/workflows/tests.yml/badge.svg" in tete
     assert "supposé" in tete and "fictif" in tete
-    assert "## Comment ce projet a été construit" in "\n".join(lignes)
     dans_details = 0
     for i, ligne in enumerate(lignes[:-1]):
         dans_details += ligne.count("<details>") - ligne.count("</details>")

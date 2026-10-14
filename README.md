@@ -174,10 +174,6 @@ Choisissez les conditions de départ (modèle d'impact, famille de stratégie, c
 - **Le rejeu TRAIN est in-sample** (profil, σ, θ, planning VWAP) ; seul VAL est hors échantillon ; TEST 2023+ scellé, une seule exécution de référence, aucun réglage sur VAL.
 - **Barres 1 minute BID** : pas de carnet, demi-spread constant supposé, pas de latence sous la minute dans le simulateur de coûts ; fenêtre unique 8h-9h New York, une seule paire.
 
-## Comment ce projet a été construit
-
-Projet réalisé en octobre 2026 avec un assistant de programmation IA (Claude, Anthropic) que j'ai dirigé : choix des sujets, protocole, vérification des résultats. Tous les chiffres sont régénérés par les scripts du dépôt et contrôlés par les tests et la CI.
-
 ## Reproduire
 
 ```bash
